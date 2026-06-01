@@ -1,4 +1,5 @@
 export const SECTION_LABELS: Record<string, string> = {
+  candleLighting: "Hadlakas Neiros — הדלקת נרות",
   alos:          "Dawn (Alot HaShachar) — עלות השחר",
   misheyakir:    "Earliest Tallit & Tefillin (Misheyakir) — משכיר",
   sunrise:       "Sunrise (Hanetz HaChama) — הנץ החמה",
@@ -16,6 +17,18 @@ export const SECTION_LABELS: Record<string, string> = {
 };
 
 export const ZMAN_LABELS: Record<string, string> = {
+  // Candle lighting
+  candleLighting18: "Candle Lighting (18 min before sunset)",
+
+  // Motzaei — these mirror the tzeit keys with "motzaei_" prefix
+  motzaei_tzaisGeonim5Point83Degrees:  "Alter Rebbe (R' Berel Levin) — 5.83° / ~23 min",
+  motzaei_tzaisBaalHatanya:            "Alter Rebbe (Default) — 6° / ~24 min",
+  motzaei_tzaisGeonim6Point3Degrees:   "Alter Rebbe (R' Avrohom Altein) — 6.3° / ~26 min",
+  motzaei_tzaisGeonim6Point83Degrees:  "Alter Rebbe (R' Berel Levin) — 6.83° / ~28 min",
+  motzaei_tzaisGeonim7Point083Degrees: "Melamed L'Ho'il — 7.083° / ~30 min",
+  motzaei_tzaisGeonim8Point5Degrees:   "R' Tukachinsky, Igros Moshe — 8.5° / ~36 min",
+  motzaei_tzais72:                     "Rabeinu Tam — 72 fixed min after shkiah",
+
   // Alos
   alos26Degrees:       "Alter Rebbe (Rav Chaim No'eh) — 26° / 120 Zmanis min before hanetz",
   alos19Point8Degrees: "Minhag Eretz Yisroel (R' Tukachinsky; Nivreshes) — 19.8° / 90 Zmanis min",
