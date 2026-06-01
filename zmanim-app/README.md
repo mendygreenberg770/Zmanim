@@ -1,36 +1,45 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Zmanim — All Halachic Times
+
+A comprehensive Jewish halachic times (zmanim) calculator built with Next.js. It computes **~200 zmanim** for any location on earth using every major formula and opinion — the same NOAA solar algorithm and halachic calculations used by KosherJava / Chabad.org.
+
+## Features
+
+- 🔍 **Address search** with autocomplete (OpenStreetMap / Nominatim geocoding)
+- 📍 **Use my location** — high-accuracy browser GPS with reverse geocoding
+- 🏔️ **Elevation input** for precise sunrise/sunset adjustment
+- 🌍 **Automatic timezone detection**
+- 📅 **Any date** selection
+- 📜 **All opinions:** GRA (Vilna Gaon), MGA (Magen Avraham), Baal HaTanya, Ateret Torah, Geonim (30+ degree variants), Yereim, Ahavat Shalom, Kol Eliyahu, Rabbeinu Tam, and more
+
+### Categories
+
+Astronomical twilight · Alos HaShachar · Misheyakir · Sunrise (Netz) · Sof Zman Shema · Sof Zman Tefila · Chatzos · Mincha Gedola · Mincha Ketana · Plag HaMincha · Sunset (Shkiah) · Bein HaShmashos · Tzait HaKochavim · Shaah Zmanis durations · Chametz times · Kidush Levana
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Open [http://localhost:3000](http://localhost:3000).
 
 ## Deploy on Vercel
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. Push this repo to GitHub (already done).
+2. Go to [vercel.com/new](https://vercel.com/new) and import the `Zmanim` repository.
+3. **Important:** set the **Root Directory** to `zmanim-app`.
+4. Vercel auto-detects Next.js — click **Deploy**.
+5. You'll get a live URL like `your-app.vercel.app`.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+No environment variables are required.
+
+## Tech
+
+- [Next.js](https://nextjs.org) (App Router)
+- [kosher-zmanim](https://www.npmjs.com/package/kosher-zmanim) — TypeScript port of [KosherJava](https://kosherjava.com)
+- Tailwind CSS
+
+## Notes
+
+Zmanim are calculated server-side via the `/api/zmanim` route handler. All times are presented for educational purposes — consult a competent halachic authority for practical observance.
