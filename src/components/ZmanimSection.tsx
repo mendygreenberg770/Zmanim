@@ -28,7 +28,7 @@ function formatTime(isoStr: string | null, timezone: string): string {
 }
 
 function isDuration(value: string): boolean {
-  return /^\d+h \d+m \d+s$/.test(value);
+  return /^\d+:\d{2} min$/.test(value);
 }
 
 export default function ZmanimSection({ title, data, timezone, defaultOpen = false, icon }: Props) {

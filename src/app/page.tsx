@@ -7,26 +7,25 @@ import { ZmanimResponse } from "@/types/zmanim";
 import { SECTION_LABELS } from "@/lib/labels";
 
 const SECTION_ICONS: Record<string, string> = {
-  astronomical: "🔭",
-  alos: "🌑",
-  misheyakir: "🌒",
-  sunrise: "🌅",
-  sofZmanShema: "📜",
+  alos:          "🌑",
+  misheyakir:    "🌒",
+  sunrise:       "🌅",
+  sofZmanShema:  "📜",
   sofZmanTefila: "🙏",
-  chatzos: "☀️",
-  minchaGedola: "🕐",
-  minchaKetana: "🕒",
-  plagHamincha: "🕔",
-  sunset: "🌇",
-  beinHashmashos: "🌆",
-  tzait: "🌃",
-  shaahZmanis: "⏱️",
-  chametz: "🍞",
-  kidushLevana: "🌙",
+  chatzos:       "☀️",
+  minchaGedola:  "🕐",
+  minchaKetana:  "🕒",
+  plagHamincha:  "🕔",
+  sunset:        "🌇",
+  tzait:         "🌃",
+  midnight:      "🌙",
+  shaahZmanis:   "⏱️",
+  chametz:       "🍞",
 };
 
 const DEFAULT_OPEN_SECTIONS = new Set([
   "alos",
+  "misheyakir",
   "sunrise",
   "sofZmanShema",
   "sofZmanTefila",
@@ -36,6 +35,9 @@ const DEFAULT_OPEN_SECTIONS = new Set([
   "plagHamincha",
   "sunset",
   "tzait",
+  "midnight",
+  "shaahZmanis",
+  "chametz",
 ]);
 
 export default function Home() {

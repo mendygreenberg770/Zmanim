@@ -5,13 +5,13 @@ export interface ZmanimMeta {
   timezone: string;
   locationName: string;
   date: string;
+  isErevPesach: boolean;
 }
 
 export type ZmanimSection = Record<string, string | null>;
 
 export interface ZmanimResponse {
   meta: ZmanimMeta;
-  astronomical: ZmanimSection;
   alos: ZmanimSection;
   misheyakir: ZmanimSection;
   sunrise: ZmanimSection;
@@ -22,11 +22,10 @@ export interface ZmanimResponse {
   minchaKetana: ZmanimSection;
   plagHamincha: ZmanimSection;
   sunset: ZmanimSection;
-  beinHashmashos: ZmanimSection;
   tzait: ZmanimSection;
+  midnight: ZmanimSection;
   shaahZmanis: ZmanimSection;
-  chametz: ZmanimSection;
-  kidushLevana: ZmanimSection;
+  chametz?: ZmanimSection;
 }
 
 export interface GeoResult {
