@@ -124,7 +124,8 @@ export async function GET(req: NextRequest) {
     },
 
     chatzos: {
-      chatzos: safe(() => cal.getChatzos()),
+      chatzos:           safe(() => cal.getChatzos()),
+      fixedLocalChatzos: safe(() => cal.getFixedLocalChatzos()),
     },
 
     minchaGedola: {

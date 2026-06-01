@@ -41,7 +41,8 @@ export const ZMAN_LABELS: Record<string, string> = {
   sofZmanTfilaGRA:         "Alter Rebbe (Other) and GRA — 4 proportional hours after hanetz",
 
   // Chatzos
-  chatzos: "Midday (Chatzot HaYom / Chatzos HaEmtzai)",
+  chatzos:           "Midday (Chatzot HaYom)",
+  fixedLocalChatzos: "Chatzos HaEmtzai (Fixed Local Chatzos)",
 
   // Mincha Gedola
   minchaGedola:            "Alter Rebbe (Other) and GRA — 6.5 proportional hours after hanetz",
