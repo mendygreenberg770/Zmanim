@@ -344,7 +344,7 @@ export default function CalendarPopup({ date, onChange }: Props) {
             {(hebrewMode ? currentHebViewMode : currentGregViewMode) === "calendar" && (
               <>
                 {/* Weekday headers */}
-                <div className={`grid grid-cols-7 px-2 pt-2 pb-1 ${hebrewMode ? "" : ""}`}>
+                <div className="grid grid-cols-7 px-2 pt-2 pb-1" dir={hebrewMode ? "rtl" : "ltr"}>
                   {(hebrewMode ? HEB_WEEKDAYS : WEEKDAYS).map((d, i) => (
                     <div key={i} className={`text-center text-[11px] font-semibold py-1
                       ${i === 6 ? "text-amber-600" : "text-gray-400"}`}>
@@ -354,7 +354,7 @@ export default function CalendarPopup({ date, onChange }: Props) {
                 </div>
 
                 {/* Day grid */}
-                <div className="grid grid-cols-7 px-2 pb-3 gap-y-0.5">
+                <div className="grid grid-cols-7 px-2 pb-3 gap-y-0.5" dir={hebrewMode ? "rtl" : "ltr"}>
                   {loading ? (
                     <div className="col-span-7 py-6 text-center text-gray-400 text-sm">Loading...</div>
                   ) : hebrewMode ? (
