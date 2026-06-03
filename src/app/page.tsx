@@ -134,6 +134,8 @@ export default function Home() {
       return "Dawn / Fast Start — עלות השחר";
     if (key === "candleLighting" && jewish?.isErevYomTov && !jewish.isFriday)
       return "Hadlakas Neiros (Yom Tov) — הדלקת נרות";
+    if (key === "motzaeiShabbos" && jewish?.shabbosFollowsYomTov)
+      return "Motzaei Shabbos / Motzaei Yom Tov";
     return SECTION_LABELS[key] ?? key;
   }
 
