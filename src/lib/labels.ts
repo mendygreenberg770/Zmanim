@@ -6,7 +6,7 @@ export const SECTION_LABELS: Record<string, string> = {
   sofZmanShema:  "Latest Shema — סוף זמן קריאת שמע",
   sofZmanTefila: "Latest Shacharis — סוף זמן תפילה",
   chatzos:       "Midday — חצות היום",
-  minchaGedola:  "Earliest Mincha (Mincha Gedolah) — מנחה גדולה",
+  minchaGedola:  "Earliest Mincha — מנחה גדולה",
   minchaKetana:  "Mincha Ketanah — מנחה קטנה",
   plagHamincha:  "Plag HaMincha — פלג המנחה",
   sunset:        "Sunset — שקיעת החמה",
