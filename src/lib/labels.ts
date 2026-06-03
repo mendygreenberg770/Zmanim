@@ -13,21 +13,18 @@ export const SECTION_LABELS: Record<string, string> = {
   tzait:         "Nightfall (Tzeit HaKochavim) — צאת הכוכבים",
   midnight:      "Midnight (Chatzot HaLailah) — חצות הלילה",
   shaahZmanis:   "Shaah Zmanit (Proportional Hour) — שעה זמנית",
-  chametz:       "Chametz Times (Erev Pesach)",
+  chametz:        "Chametz Times (Erev Pesach)",
+  motzaeiShabbos: "Motzaei Shabbos — מוצאי שבת",
 };
 
 export const ZMAN_LABELS: Record<string, string> = {
   // Candle lighting
-  candleLighting18: "Candle Lighting (18 min before sunset)",
+  earliestCandleLighting: "Earliest Candle Lighting (from Plag HaMincha)",
+  candleLighting18:       "Candle Lighting — 18 min before sunset",
 
-  // Motzaei — these mirror the tzeit keys with "motzaei_" prefix
-  motzaei_tzaisGeonim5Point83Degrees:  "Alter Rebbe (R' Berel Levin) — 5.83° / ~23 min",
-  motzaei_tzaisBaalHatanya:            "Alter Rebbe (Default) — 6° / ~24 min",
-  motzaei_tzaisGeonim6Point3Degrees:   "Alter Rebbe (R' Avrohom Altein) — 6.3° / ~26 min",
-  motzaei_tzaisGeonim6Point83Degrees:  "Alter Rebbe (R' Berel Levin) — 6.83° / ~28 min",
-  motzaei_tzaisGeonim7Point083Degrees: "Melamed L'Ho'il — 7.083° / ~30 min",
-  motzaei_tzaisGeonim8Point5Degrees:   "R' Tukachinsky, Igros Moshe — 8.5° / ~36 min",
-  motzaei_tzais72:                     "Rabeinu Tam — 72 fixed min after shkiah",
+  // Motzaei Shabbos (2 opinions used in candle-lighting and motzaei sections)
+  motzaei_tzaisGeonim8Point5Degrees: "Shabbos Ends — R' Tukachinsky / Igros Moshe, 36 min (8.5°)",
+  motzaei_tzais72:                   "Shabbos Ends — Rabeinu Tam, 72 fixed min after sunset",
 
   // Alos
   alos26Degrees:       "Alter Rebbe (Rav Chaim No'eh) — 26° / 120 Zmanis min before hanetz",

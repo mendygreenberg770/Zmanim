@@ -3,42 +3,36 @@
 import { useState, useCallback } from "react";
 import LocationPicker from "@/components/LocationPicker";
 import ZmanimSection from "@/components/ZmanimSection";
+import HebrewDatePicker from "@/components/HebrewDatePicker";
 import { ZmanimResponse, JewishInfo } from "@/types/zmanim";
 import { SECTION_LABELS } from "@/lib/labels";
 
-// ── Icon & ordering ───────────────────────────────────────────────────────────
+// ── Section ordering ──────────────────────────────────────────────────────────
 
-const SECTION_ICONS: Record<string, string> = {
-  candleLighting: "🕯️",
-  alos:           "🌑",
-  misheyakir:     "🌒",
-  sunrise:        "🌅",
-  sofZmanShema:   "📜",
-  sofZmanTefila:  "🙏",
-  chatzos:        "☀️",
-  minchaGedola:   "🕐",
-  minchaKetana:   "🕒",
-  plagHamincha:   "🕔",
-  sunset:         "🌇",
-  tzait:          "🌃",
-  midnight:       "🌙",
-  shaahZmanis:    "⏱️",
-  chametz:        "🍞",
-};
-
-// Explicit ordering — candleLighting appears just before sunset
 const SECTION_ORDER = [
   "candleLighting",
   "alos", "misheyakir", "sunrise",
   "sofZmanShema", "sofZmanTefila",
   "chatzos", "minchaGedola", "minchaKetana", "plagHamincha",
-  "sunset", "tzait", "midnight", "shaahZmanis",
+  "sunset", "tzait", "motzaeiShabbos", "midnight", "shaahZmanis",
   "chametz",
 ];
 
 const DEFAULT_OPEN = new Set(SECTION_ORDER);
 
-// ── Special-day badge ─────────────────────────────────────────────────────────
+// ── Date helpers ──────────────────────────────────────────────────────────────
+
+function shiftDate(dateStr: string, days: number): string {
+  const d = new Date(dateStr + "T12:00:00Z");
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().split("T")[0];
+}
+
+function todayStr(): string {
+  return new Date().toISOString().split("T")[0];
+}
+
+// ── Day badge ─────────────────────────────────────────────────────────────────
 
 function DayBadge({ jewish }: { jewish: JewishInfo }) {
   if (!jewish.specialDay && !jewish.isFriday) return null;
@@ -46,26 +40,41 @@ function DayBadge({ jewish }: { jewish: JewishInfo }) {
   const isShabbosOrYT = jewish.isShabbos || jewish.isYomTov;
   const isFast        = jewish.isTaanit;
   const isFriday      = jewish.isFriday && !jewish.isErevYomTov;
-  const isErevYT      = jewish.isErevYomTov;
 
-  let bg  = "bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200 border-blue-200 dark:border-blue-700";
+  let cls = "bg-blue-50 border-blue-200 text-blue-800";
+  if (isShabbosOrYT) cls = "bg-amber-50 border-amber-200 text-amber-900";
+  if (isFast)        cls = "bg-gray-100 border-gray-300 text-gray-700";
+
   let label = jewish.specialDay ?? "";
+  if (isFriday && !jewish.isErevYomTov) label = "Erev Shabbos";
 
-  if (isShabbosOrYT)
-    bg = "bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200 border-amber-300 dark:border-amber-700";
-  if (isFast)
-    bg = "bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 border-slate-400 dark:border-slate-500";
-  if (isFriday && !isErevYT)
-    label = "Erev Shabbos";
-
-  const fastNote = isFast && jewish.isMinorFast ? " · Fast begins at Alos HaShachar" : "";
-  const majorFastNote = isFast && !jewish.isMinorFast ? " · 25-hour fast — begins previous evening" : "";
+  const fastNote =
+    isFast && jewish.isMinorFast  ? " — Fast begins at Alos HaShachar" :
+    isFast && !jewish.isMinorFast ? " — 25-hour fast" : "";
 
   return (
-    <div className={`flex flex-wrap items-center gap-2 px-4 py-3 rounded-xl border text-sm font-medium ${bg}`}>
-      <span>{label}{fastNote}{majorFastNote}</span>
-      {jewish.isChanukah && <span className="ml-1">🕎</span>}
+    <div className={`px-4 py-2 rounded-lg border text-sm font-medium ${cls}`}>
+      {label}{fastNote}
     </div>
+  );
+}
+
+// ── Nav button ────────────────────────────────────────────────────────────────
+
+function NavBtn({ onClick, children, active }: {
+  onClick: () => void; children: React.ReactNode; active?: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
+        active
+          ? "bg-blue-600 border-blue-600 text-white"
+          : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
+      }`}
+    >
+      {children}
+    </button>
   );
 }
 
@@ -75,12 +84,12 @@ export default function Home() {
   const [location, setLocation] = useState<{
     lat: number; lng: number; name: string; timezone: string;
   } | null>(null);
-  const [date, setDate]         = useState(new Date().toISOString().split("T")[0]);
-  const [elevation, setElev]    = useState(0);
-  const [data, setData]         = useState<ZmanimResponse | null>(null);
-  const [loading, setLoading]   = useState(false);
-  const [error, setError]       = useState<string | null>(null);
-  const [showAdv, setShowAdv]   = useState(false);
+  const [date, setDate]       = useState(todayStr());
+  const [elevation, setElev]  = useState(0);
+  const [data, setData]       = useState<ZmanimResponse | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError]     = useState<string | null>(null);
+  const [showAdv, setShowAdv] = useState(false);
 
   const fetchZmanim = useCallback(async (
     lat: number, lng: number, name: string, tz: string, d: string, elev: number
@@ -100,13 +109,14 @@ export default function Home() {
     } finally { setLoading(false); }
   }, []);
 
+  const goToDate = useCallback((d: string) => {
+    setDate(d);
+    if (location) fetchZmanim(location.lat, location.lng, location.name, location.timezone, d, elevation);
+  }, [location, elevation, fetchZmanim]);
+
   const handleLocation = (lat: number, lng: number, name: string, tz: string) => {
     setLocation({ lat, lng, name, timezone: tz });
     fetchZmanim(lat, lng, name, tz, date, elevation);
-  };
-  const handleDate = (d: string) => {
-    setDate(d);
-    if (location) fetchZmanim(location.lat, location.lng, location.name, location.timezone, d, elevation);
   };
   const handleElev = (e: number) => {
     setElev(e);
@@ -115,7 +125,6 @@ export default function Home() {
 
   const jewish = data?.meta.jewish;
 
-  // Section title overrides based on day type
   function sectionTitle(key: string): string {
     if (key === "alos" && jewish?.isTaanit && jewish.isMinorFast)
       return "Dawn / Fast Start — עלות השחר";
@@ -127,97 +136,95 @@ export default function Home() {
   }
 
   function sectionSubtitle(key: string): string | undefined {
-    if (key === "candleLighting" && jewish) {
-      const what = jewish.isFriday ? "Shabbos" : jewish.specialDay ?? "Yom Tov";
-      return `${what} ends / Motzaei times below`;
-    }
+    if (key === "candleLighting" && jewish)
+      return jewish.isFriday ? "Erev Shabbos" : "Erev Yom Tov";
     return undefined;
   }
 
   function sectionAccent(key: string): string | undefined {
-    if (key === "candleLighting")
-      return "border-amber-300 dark:border-amber-600";
-    if (key === "tzait" && jewish?.isShabbos)
-      return "border-amber-300 dark:border-amber-600";
-    if (key === "alos" && jewish?.isTaanit)
-      return "border-slate-400 dark:border-slate-500";
+    if (key === "candleLighting" || key === "motzaeiShabbos") return "amber";
+    if (key === "tzait" && jewish?.isShabbos) return "amber";
+    if (key === "alos" && jewish?.isTaanit)   return "gray";
     return undefined;
   }
 
-  const totalZmanim = data
-    ? Object.entries(data)
-        .filter(([k]) => k !== "meta")
-        .reduce((acc, [, sec]) =>
-          acc + Object.values(sec as Record<string, string | null>).filter(Boolean).length, 0)
-    : 0;
+  const isToday = date === todayStr();
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-slate-100">
+    <div className="min-h-screen bg-gray-50 text-gray-900">
       {/* Header */}
-      <header className="bg-slate-900/80 backdrop-blur border-b border-slate-700 sticky top-0 z-10">
+      <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">✡️</span>
-            <div>
-              <h1 className="text-lg font-bold text-white leading-tight">Zmanim</h1>
-              <p className="text-xs text-slate-400">Halachic Times — All Opinions</p>
-            </div>
+          <div>
+            <h1 className="text-lg font-bold text-gray-900 leading-tight">Zmanim</h1>
+            <p className="text-xs text-gray-500">Halachic Times — All Opinions</p>
           </div>
           {data && (
             <div className="text-right">
-              <p className="text-sm font-semibold text-blue-400">{totalZmanim} zmanim</p>
               {jewish?.jewishDate && (
-                <p className="text-xs text-amber-400">{jewish.jewishDate}</p>
+                <p className="text-sm font-semibold text-amber-700">{jewish.jewishDate}</p>
+              )}
+              {jewish?.specialDay && (
+                <p className="text-xs text-gray-500">{jewish.specialDay}</p>
               )}
             </div>
           )}
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 py-5 space-y-5">
-        {/* Location / date controls */}
-        <div className="bg-slate-800/60 backdrop-blur rounded-2xl border border-slate-700 p-5 shadow-lg space-y-4">
-          <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Location</h2>
+      <main className="max-w-4xl mx-auto px-4 py-5 space-y-4">
+        {/* Controls card */}
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 space-y-4">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Location</p>
           <LocationPicker onLocationSelect={handleLocation} />
 
-          <div className="flex flex-wrap gap-4">
-            <div className="flex-1 min-w-[160px]">
-              <label className="block text-xs text-slate-400 mb-1.5 font-medium">Date</label>
-              <input
-                type="date" value={date}
-                onChange={(e) => handleDate(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl bg-slate-700 border border-slate-600
-                           text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+          <div className="flex flex-wrap gap-4 items-start">
+            {/* Date navigation */}
+            <div className="flex-1 min-w-[220px] space-y-1.5">
+              <label className="block text-xs text-gray-500 font-medium">Date</label>
+              <div className="flex items-center gap-1.5">
+                <NavBtn onClick={() => goToDate(shiftDate(date, -1))}>&#8592;</NavBtn>
+                <input
+                  type="date" value={date}
+                  onChange={e => goToDate(e.target.value)}
+                  className="flex-1 px-3 py-2 rounded-lg border border-gray-300 bg-white text-gray-900 text-sm
+                             focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <NavBtn onClick={() => goToDate(shiftDate(date, 1))}>&#8594;</NavBtn>
+                <NavBtn onClick={() => goToDate(todayStr())} active={isToday}>Today</NavBtn>
+              </div>
+              <HebrewDatePicker date={date} onChange={goToDate} />
             </div>
-            <div className="flex-shrink-0">
-              <label className="block text-xs text-slate-400 mb-1.5 font-medium">
+
+            {/* Advanced */}
+            <div className="flex-shrink-0 space-y-1.5">
+              <label className="block text-xs text-gray-500 font-medium">
                 <button onClick={() => setShowAdv(!showAdv)}
-                  className="text-blue-400 hover:text-blue-300 transition-colors">
+                  className="text-blue-600 hover:text-blue-700 transition-colors">
                   {showAdv ? "▲" : "▼"} Advanced
                 </button>
               </label>
               {showAdv ? (
                 <div className="flex items-center gap-2">
                   <input type="number" value={elevation}
-                    onChange={(e) => handleElev(parseFloat(e.target.value) || 0)}
+                    onChange={e => handleElev(parseFloat(e.target.value) || 0)}
                     placeholder="0"
-                    className="w-28 px-3 py-2.5 rounded-xl bg-slate-700 border border-slate-600
-                               text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-28 px-3 py-2 rounded-lg border border-gray-300 bg-white text-gray-900 text-sm
+                               focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
-                  <span className="text-slate-400 text-sm">m elev.</span>
+                  <span className="text-gray-500 text-sm">m elev.</span>
                 </div>
-              ) : <div className="h-[42px]" />}
+              ) : <div className="h-[38px]" />}
             </div>
           </div>
 
           {location && (
-            <div className="bg-slate-700/40 rounded-xl px-4 py-2.5 text-xs flex flex-wrap gap-x-5 gap-y-1">
-              <span className="text-slate-400">📍 <span className="text-slate-200">{location.name}</span></span>
-              <span className="text-slate-400">Lat <span className="font-mono text-slate-200">{location.lat.toFixed(6)}</span></span>
-              <span className="text-slate-400">Lng <span className="font-mono text-slate-200">{location.lng.toFixed(6)}</span></span>
-              <span className="text-slate-400">TZ <span className="text-slate-200">{location.timezone}</span></span>
-              {elevation > 0 && <span className="text-slate-400">Elev <span className="text-slate-200">{elevation}m</span></span>}
+            <div className="bg-gray-50 rounded-lg px-4 py-2.5 text-xs flex flex-wrap gap-x-5 gap-y-1 border border-gray-100">
+              <span className="text-gray-500">Location: <span className="text-gray-800 font-medium">{location.name}</span></span>
+              <span className="text-gray-500">Lat <span className="font-mono text-gray-800">{location.lat.toFixed(6)}</span></span>
+              <span className="text-gray-500">Lng <span className="font-mono text-gray-800">{location.lng.toFixed(6)}</span></span>
+              <span className="text-gray-500">TZ <span className="text-gray-800">{location.timezone}</span></span>
+              {elevation > 0 && <span className="text-gray-500">Elev <span className="text-gray-800">{elevation}m</span></span>}
             </div>
           )}
         </div>
@@ -225,18 +232,17 @@ export default function Home() {
         {/* States */}
         {loading && (
           <div className="flex flex-col items-center py-16 gap-4">
-            <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
-            <p className="text-slate-400 text-sm">Calculating zmanim…</p>
+            <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+            <p className="text-gray-400 text-sm">Calculating zmanim...</p>
           </div>
         )}
         {error && !loading && (
-          <div className="bg-red-900/30 border border-red-700 rounded-xl px-6 py-4 text-red-300">{error}</div>
+          <div className="bg-red-50 border border-red-200 rounded-xl px-5 py-4 text-red-700 text-sm">{error}</div>
         )}
         {!loading && !data && !error && (
-          <div className="text-center py-20 space-y-3">
-            <div className="text-5xl">🌍</div>
-            <h3 className="text-lg font-semibold text-slate-300">Enter a location to get started</h3>
-            <p className="text-slate-500 text-sm max-w-sm mx-auto">
+          <div className="text-center py-20 space-y-2">
+            <h3 className="text-base font-semibold text-gray-500">Enter a location to get started</h3>
+            <p className="text-gray-400 text-sm max-w-sm mx-auto">
               Search for any address or use your current location to calculate all halachic times.
             </p>
           </div>
@@ -245,23 +251,21 @@ export default function Home() {
         {/* Results */}
         {!loading && data && (
           <>
-            {/* Jewish date + special day badge */}
             <div className="space-y-2">
               <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
-                <span className="text-slate-400">
+                <span className="text-gray-500">
                   {new Date(data.meta.date + "T12:00:00Z").toLocaleDateString("en-US", {
                     weekday: "long", year: "numeric", month: "long", day: "numeric",
                   })}
                 </span>
                 {jewish?.jewishDate && (
-                  <span className="text-amber-400 font-medium">{jewish.jewishDate}</span>
+                  <span className="text-amber-700 font-medium">{jewish.jewishDate}</span>
                 )}
               </div>
               {jewish && <DayBadge jewish={jewish} />}
             </div>
 
-            {/* Sections in explicit order */}
-            <div className="space-y-2.5">
+            <div className="space-y-2">
               {SECTION_ORDER.map((key) => {
                 const sec = (data as unknown as Record<string, Record<string, string | null>>)[key];
                 if (!sec) return null;
@@ -273,7 +277,6 @@ export default function Home() {
                     data={sec}
                     timezone={data.meta.timezone}
                     defaultOpen={DEFAULT_OPEN.has(key)}
-                    icon={SECTION_ICONS[key]}
                     accentColor={sectionAccent(key)}
                   />
                 );
@@ -283,7 +286,7 @@ export default function Home() {
         )}
       </main>
 
-      <footer className="text-center py-8 text-slate-600 text-xs">
+      <footer className="text-center py-8 text-gray-400 text-xs">
         Powered by KosherZmanim · NOAA Solar Algorithm · All opinions for educational purposes
       </footer>
     </div>

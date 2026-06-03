@@ -8,9 +8,8 @@ interface Props {
   data: Record<string, string | null>;
   timezone: string;
   defaultOpen?: boolean;
-  icon?: string;
-  subtitle?: string;       // e.g. "Motzaei Shabbos" label shown in header
-  accentColor?: string;    // tailwind border colour class e.g. "border-yellow-500"
+  subtitle?: string;
+  accentColor?: string; // "amber" | "gray" | undefined
 }
 
 function formatTime(isoStr: string | null, timezone: string): string {
@@ -20,6 +19,7 @@ function formatTime(isoStr: string | null, timezone: string): string {
       timeZone: timezone,
       hour: "2-digit",
       minute: "2-digit",
+      second: "2-digit",
       hour12: true,
     });
   } catch { return isoStr; }
@@ -37,13 +37,14 @@ function TimeRow({
     : "—";
 
   return (
-    <tr className="border-b border-slate-100 dark:border-slate-700/50 last:border-0
-                   hover:bg-blue-50 dark:hover:bg-slate-700/40 transition-colors">
-      <td className={`px-5 py-2.5 text-slate-600 dark:text-slate-300 ${small ? "text-xs" : "text-sm font-medium"}`}>
+    <tr className="border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors">
+      <td className={`px-4 py-2.5 text-gray-700 ${small ? "text-xs" : "text-sm"}`}>
         {label}
       </td>
-      <td className={`px-5 py-2.5 text-right font-mono tabular-nums ${
-        small ? "text-xs text-blue-600 dark:text-blue-300" : "text-sm text-blue-700 dark:text-blue-400 font-semibold"
+      <td className={`px-4 py-2.5 text-right font-mono tabular-nums ${
+        small
+          ? "text-xs text-blue-500"
+          : "text-sm text-blue-600 font-semibold"
       }`}>
         {formatted}
       </td>
@@ -52,44 +53,37 @@ function TimeRow({
 }
 
 export default function ZmanimSection({
-  title, data, timezone, defaultOpen = false, icon, subtitle, accentColor,
+  title, data, timezone, defaultOpen = false, subtitle, accentColor,
 }: Props) {
   const [open, setOpen] = useState(defaultOpen);
 
-  // Split regular vs motzaei_ prefixed entries
   const allEntries = Object.entries(data).filter(([, v]) => v !== null);
-  const regular  = allEntries.filter(([k]) => !k.startsWith("motzaei_"));
-  const motzaei  = allEntries.filter(([k]) =>  k.startsWith("motzaei_"));
+  const regular    = allEntries.filter(([k]) => !k.startsWith("motzaei_"));
+  const motzaei    = allEntries.filter(([k]) =>  k.startsWith("motzaei_"));
 
   if (allEntries.length === 0) return null;
 
-  const borderClass = accentColor ?? "border-slate-200 dark:border-slate-700";
+  const accentBorder =
+    accentColor === "amber" ? "border-l-[3px] border-l-amber-400" :
+    accentColor === "gray"  ? "border-l-[3px] border-l-gray-400"  : "";
 
   return (
-    <div className={`bg-white dark:bg-slate-800 rounded-2xl shadow-sm border overflow-hidden ${borderClass}`}>
+    <div className={`bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden ${accentBorder}`}>
       <button
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-5 py-3.5 text-left
-                   hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors"
+        className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-50 transition-colors"
       >
-        <div className="flex items-center gap-3">
-          {icon && <span className="text-xl">{icon}</span>}
-          <div>
-            <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100 leading-tight">
-              {title}
-            </h2>
-            {subtitle && (
-              <p className="text-xs text-amber-600 dark:text-amber-400 font-medium mt-0.5">
-                {subtitle}
-              </p>
-            )}
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              {allEntries.length} formula{allEntries.length !== 1 ? "s" : ""}
-            </p>
-          </div>
+        <div>
+          <h2 className="text-sm font-semibold text-gray-800 leading-tight">{title}</h2>
+          {subtitle && (
+            <p className="text-xs text-amber-700 font-medium mt-0.5">{subtitle}</p>
+          )}
+          <p className="text-xs text-gray-400 mt-0.5">
+            {allEntries.length} formula{allEntries.length !== 1 ? "s" : ""}
+          </p>
         </div>
         <svg
-          className={`w-4 h-4 text-slate-400 transition-transform flex-shrink-0 ${open ? "rotate-180" : ""}`}
+          className={`w-4 h-4 text-gray-400 transition-transform flex-shrink-0 ${open ? "rotate-180" : ""}`}
           fill="none" viewBox="0 0 24 24" stroke="currentColor"
         >
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -97,7 +91,7 @@ export default function ZmanimSection({
       </button>
 
       {open && (
-        <div className="border-t border-slate-100 dark:border-slate-700">
+        <div className="border-t border-gray-100">
           <table className="w-full">
             <tbody>
               {regular.map(([key, value]) => (
@@ -113,12 +107,12 @@ export default function ZmanimSection({
 
           {motzaei.length > 0 && (
             <>
-              <div className="px-5 pt-3 pb-1 bg-slate-50 dark:bg-slate-900/30 border-t border-slate-100 dark:border-slate-700">
-                <p className="text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wide">
-                  {subtitle ?? "Motzaei Shabbos"} — End Times
+              <div className="px-4 pt-3 pb-2 bg-amber-50 border-t border-amber-100">
+                <p className="text-xs font-semibold text-amber-800 uppercase tracking-wide">
+                  Shabbos End Times
                 </p>
               </div>
-              <table className="w-full bg-slate-50 dark:bg-slate-900/20">
+              <table className="w-full bg-gray-50">
                 <tbody>
                   {motzaei.map(([key, value]) => (
                     <TimeRow

@@ -234,7 +234,8 @@ export async function GET(req: NextRequest) {
     const nextCal: Cal = new ComplexZmanimCalendar(geo);
     nextCal.setDate(new Date(date.getTime() + 86_400_000));
 
-    // 18 min before today's sunset
+    const earliestCandleLighting = safe(() => cal.getPlagHaminchaBaalHatanya());
+
     const candleLighting18 = (() => {
       try {
         const iso = toISO(cal.getSeaLevelSunset());
@@ -243,13 +244,13 @@ export async function GET(req: NextRequest) {
       } catch { return null; }
     })();
 
-    // Motzaei times = next day's tzeit, prefixed so UI can style them smaller
-    const nextTzait = tzaitValues(nextCal);
-    const motzaei = Object.fromEntries(
-      Object.entries(nextTzait).map(([k, v]) => [`motzaei_${k}`, v])
-    );
-
-    result.candleLighting = { candleLighting18, ...motzaei };
+    // Only the two standard Motzaei Shabbos opinions
+    result.candleLighting = {
+      earliestCandleLighting,
+      candleLighting18,
+      motzaei_tzaisGeonim8Point5Degrees: safe(() => nextCal.getTzaisGeonim8Point5Degrees()),
+      motzaei_tzais72:                   safe(() => nextCal.getTzais72()),
+    };
   }
 
   // ── Regular daily sections ──────────────────────────────────────────────────
@@ -309,6 +310,14 @@ export async function GET(req: NextRequest) {
   };
 
   result.tzait = tzaitValues(cal);
+
+  // ── Motzaei Shabbos (Shabbos only — dedicated section, 2 opinions) ─────────
+  if (jewish.isShabbos) {
+    result.motzaeiShabbos = {
+      tzaisGeonim8Point5Degrees: safe(() => cal.getTzaisGeonim8Point5Degrees()),
+      tzais72:                   safe(() => cal.getTzais72()),
+    };
+  }
 
   result.midnight = { midnightTonight: halachicMidnight(geo, date) };
 
