@@ -44,7 +44,7 @@ const SECTION_ROUND: Record<string, "floor" | "ceil"> = {
   candleLighting:  "floor",
   alos:            "floor",
   misheyakir:      "ceil",
-  sunrise:         "floor",
+  sunrise:         "ceil",
   sofZmanShema:    "floor",
   sofZmanTefila:   "floor",
   chametz:         "floor",
