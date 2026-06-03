@@ -227,7 +227,7 @@ export default function CalendarPopup({ date, onChange }: Props) {
               <button
                 onClick={() => {
                   if (hebrewMode) {
-                    if (currentHebViewMode === "calendar") prevHebMonth();
+                    if (currentHebViewMode === "calendar") nextHebMonth();
                     else { setHebViewMode("calendar"); }
                   } else {
                     if (currentGregViewMode === "calendar") prevGregMonth();
@@ -236,7 +236,7 @@ export default function CalendarPopup({ date, onChange }: Props) {
                 }}
                 className="px-2 py-1 rounded-lg hover:bg-gray-100 text-gray-600 transition-colors font-medium text-sm"
               >
-                {(hebrewMode ? currentHebViewMode : currentGregViewMode) === "calendar" ? "‹" : "✕"}
+                {(hebrewMode ? currentHebViewMode : currentGregViewMode) === "calendar" ? (hebrewMode ? "›" : "‹") : "✕"}
               </button>
 
               {/* Clickable month / year */}
@@ -267,7 +267,7 @@ export default function CalendarPopup({ date, onChange }: Props) {
               <button
                 onClick={() => {
                   if (hebrewMode) {
-                    if (currentHebViewMode === "calendar") nextHebMonth();
+                    if (currentHebViewMode === "calendar") prevHebMonth();
                   } else {
                     if (currentGregViewMode === "calendar") nextGregMonth();
                   }
@@ -276,7 +276,7 @@ export default function CalendarPopup({ date, onChange }: Props) {
                   (hebrewMode ? currentHebViewMode : currentGregViewMode) !== "calendar" ? "invisible" : ""
                 }`}
               >
-                ›
+                {hebrewMode ? "‹" : "›"}
               </button>
             </div>
 

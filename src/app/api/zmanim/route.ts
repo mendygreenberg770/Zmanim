@@ -155,12 +155,18 @@ function analyzeJewishCalendar(date: Date) {
     try { isTaanit     = jc.isTaanis(); }          catch {}
     try { isRoshChodesh = jc.isRoshChodesh(); }    catch {}
 
-    // Check if tomorrow is also Yom Tov (2-day YT) and build candle-lighting label
-    let isNextDayYomTov = false;
+    // isYomTov() from the library includes Chol HaMoed — compute the actual (non-Chol-HaMoed) flag
+    let isCholHaMoed = false;
+    try { isCholHaMoed = jc.isCholHamoed(); } catch {}
+    const isActualYomTov = isYomTov && !isCholHaMoed;
+
+    // Check if tomorrow is also actual Yom Tov (2-day YT) and build candle-lighting label
+    let isNextDayActualYomTov = false;
     let candleLightingForLabel: string | null = null;
     try {
       const jcTom = new JewishCalendar(new Date(date.getTime() + 86_400_000));
-      isNextDayYomTov = jcTom.isYomTov();
+      const isNextDayCholHaMoed = jcTom.isCholHamoed();
+      isNextDayActualYomTov = jcTom.isYomTov() && !isNextDayCholHaMoed;
       const tomD = jcTom.getJewishDayOfMonth();
       const tomM = jcTom.getJewishMonth();
       const tomSpecial = getSpecialDayName(jcTom);
@@ -169,14 +175,12 @@ function analyzeJewishCalendar(date: Date) {
       candleLightingForLabel = `${tomD} ${tomMonthName}${detail}`;
     } catch {}
 
-    let isCholHaMoed = false;
-    try { isCholHaMoed = jc.isCholHamoed(); } catch {}
-
+    // Shabbos that immediately follows a real (non-Chol-HaMoed) YomTov day
     let shabbosFollowsYomTov = false;
     if (isShabbos) {
       try {
         const jcYest = new JewishCalendar(new Date(date.getTime() - 86_400_000));
-        shabbosFollowsYomTov = jcYest.isYomTov();
+        shabbosFollowsYomTov = jcYest.isYomTov() && !jcYest.isCholHamoed();
       } catch {}
     }
 
@@ -193,23 +197,23 @@ function analyzeJewishCalendar(date: Date) {
 
     // Candles may only be lit from tzeit when already in Yom Tov/Shabbos
     const candleLightingFromTzeit =
-      (isYomTov && isNextDayYomTov && !isFriday) || // Day 1 of 2-day YT (not Erev Shabbos)
-      (isShabbos && isErevYomTov);                    // Shabbos that is also Erev YT
+      (isActualYomTov && isNextDayActualYomTov && !isFriday) || // Day 1 of 2-day YT (not Erev Shabbos)
+      (isShabbos && isErevYomTov);                               // Shabbos that is also Erev YT
 
     let motzaeiLabel: string | null = null;
     if (isFriday || (isErevYomTov && !isShabbos)) motzaeiLabel = "Motzaei Shabbos";
     if (isErevYomTov && !isFriday)                 motzaeiLabel = "Motzaei Yom Tov";
     if (isShabbos)                                  motzaeiLabel = "Motzaei Shabbos";
-    if (isYomTov && !isShabbos)                     motzaeiLabel = "Motzaei Yom Tov";
+    if (isActualYomTov && !isShabbos)               motzaeiLabel = "Motzaei Yom Tov";
 
     return {
       jewishDate, specialDay,
       isFriday, isShabbos,
-      isErevYomTov, isYomTov,
+      isErevYomTov, isYomTov: isActualYomTov,
       isTaanit, isMinorFast, isYomKippur, isTishaBAv,
       isRoshChodesh, isChanukah,
       isErevPesach, candleLightingFromTzeit,
-      needsCandleLighting: isFriday || (!isCholHaMoed && (isErevYomTov || (isYomTov && isNextDayYomTov))),
+      needsCandleLighting: isFriday || isErevYomTov || (isActualYomTov && isNextDayActualYomTov),
       motzaeiLabel, candleLightingForLabel, shabbosFollowsYomTov,
     };
   } catch {
@@ -294,7 +298,9 @@ export async function GET(req: NextRequest) {
         if (motzaeiIsShabbos) {
           try {
             const jcPrev = new JewishCalendar(new Date(motzaeiDate.getTime() - 86_400_000));
-            if (jcM.isYomTov() || jcPrev.isYomTov())
+            const prevIsActualYT = jcPrev.isYomTov() && !jcPrev.isCholHamoed();
+            const motzaeiIsActualYT = jcM.isYomTov() && !jcM.isCholHamoed();
+            if (motzaeiIsActualYT || prevIsActualYT)
               motzaeiTypeLabel = "Motzaei Shabbos / Motzaei Yom Tov";
           } catch {}
         }
