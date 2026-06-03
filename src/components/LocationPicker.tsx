@@ -44,20 +44,12 @@ export default function LocationPicker({ onLocationSelect }: Props) {
 
   const resolveTimezone = async (lat: number, lng: number): Promise<string> => {
     try {
-      const res = await fetch(
-        `https://timezonefinder.com/api/?lat=${lat}&lng=${lng}&format=json`
-      );
+      const res = await fetch(`/api/timezone?lat=${lat}&lng=${lng}`);
       const data = await res.json();
-      return data.timezone || guessTimezone(lat, lng);
+      return data.timezone ?? "UTC";
     } catch {
-      return guessTimezone(lat, lng);
+      return "UTC";
     }
-  };
-
-  const guessTimezone = (lat: number, lng: number): string => {
-    const offset = Math.round(lng / 15);
-    if (offset >= 0) return `Etc/GMT-${offset}`;
-    return `Etc/GMT+${Math.abs(offset)}`;
   };
 
   const handleSelect = async (result: NominatimResult) => {
