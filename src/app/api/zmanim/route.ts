@@ -260,8 +260,31 @@ export async function GET(req: NextRequest) {
       };
     } else {
       // Regular Erev Shabbos or weekday Erev YT: light before sunset
-      const nextCal: Cal = new ComplexZmanimCalendar(geo);
-      nextCal.setDate(new Date(date.getTime() + 86_400_000));
+      // Find the last consecutive YT/Shabbos day to compute correct motzaei times
+      let motzaeiDate = new Date(date.getTime() + 86_400_000);
+      for (let offset = 2; offset <= 4; offset++) {
+        const candidate = new Date(date.getTime() + offset * 86_400_000);
+        let isRestricted = false;
+        try {
+          const jcC = new JewishCalendar(candidate);
+          isRestricted = jcC.isYomTov() || jcC.getDayOfWeek() === 7;
+        } catch {}
+        if (isRestricted) motzaeiDate = candidate;
+        else break;
+      }
+      const motzaeiCal: Cal = new ComplexZmanimCalendar(geo);
+      motzaeiCal.setDate(motzaeiDate);
+
+      let motzaeiHeading = "Motzaei Times";
+      try {
+        const jcM = new JewishCalendar(motzaeiDate);
+        const motzaeiIsShabbos = jcM.getDayOfWeek() === 7;
+        const md = jcM.getJewishDayOfMonth();
+        const mm = jcM.getJewishMonth();
+        const motzaeiJewishDay = `${md} ${HEBREW_MONTHS[mm] ?? ""}`;
+        const motzaeiTypeLabel = motzaeiIsShabbos ? "Motzaei Shabbos" : "Motzaei Yom Tov";
+        motzaeiHeading = `${motzaeiTypeLabel} — ${motzaeiJewishDay}`;
+      } catch {}
 
       const earliestCandleLighting = safe(() => cal.getPlagHaminchaBaalHatanya());
       const candleLighting18 = (() => {
@@ -275,8 +298,9 @@ export async function GET(req: NextRequest) {
       result.candleLighting = {
         earliestCandleLighting,
         candleLighting18,
-        motzaei_tzaisGeonim8Point5Degrees: safe(() => nextCal.getTzaisGeonim8Point5Degrees()),
-        motzaei_tzais72:                   safe(() => nextCal.getTzais72()),
+        _motzaeiHeading: motzaeiHeading,
+        motzaei_tzaisGeonim8Point5Degrees: safe(() => motzaeiCal.getTzaisGeonim8Point5Degrees()),
+        motzaei_tzais72:                   safe(() => motzaeiCal.getTzais72()),
       };
     }
   }

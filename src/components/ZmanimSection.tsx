@@ -57,7 +57,9 @@ export default function ZmanimSection({
 }: Props) {
   const [open, setOpen] = useState(defaultOpen);
 
-  const allEntries = Object.entries(data).filter(([, v]) => v !== null);
+  const motzaeiHeadingText = typeof data["_motzaeiHeading"] === "string"
+    ? data["_motzaeiHeading"] : "Motzaei Times";
+  const allEntries = Object.entries(data).filter(([k, v]) => !k.startsWith("_") && v !== null);
   const regular    = allEntries.filter(([k]) => !k.startsWith("motzaei_"));
   const motzaei    = allEntries.filter(([k]) =>  k.startsWith("motzaei_"));
 
@@ -109,7 +111,7 @@ export default function ZmanimSection({
             <>
               <div className="px-4 pt-3 pb-2 bg-amber-50 border-t border-amber-100">
                 <p className="text-xs font-semibold text-amber-800 uppercase tracking-wide">
-                  Shabbos End Times
+                  {motzaeiHeadingText}
                 </p>
               </div>
               <table className="w-full bg-gray-50">

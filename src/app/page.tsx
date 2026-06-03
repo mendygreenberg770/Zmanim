@@ -142,8 +142,8 @@ export default function Home() {
   function sectionSubtitle(key: string): string | undefined {
     if (key === "candleLighting" && jewish?.candleLightingFromTzeit)
       return jewish?.candleLightingForLabel
-        ? `Light after Yom Tov ends — ${jewish.candleLightingForLabel}`
-        : "Light candles only after Yom Tov ends";
+        ? `Light after — ${jewish.candleLightingForLabel}`
+        : "Light after";
     if (key === "candleLighting" && jewish)
       return jewish.candleLightingForLabel ?? (jewish.isFriday ? "Erev Shabbos" : "Erev Yom Tov");
     if (key === "motzaeiShabbos" && jewish?.jewishDate)
