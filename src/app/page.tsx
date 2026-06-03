@@ -19,7 +19,26 @@ const SECTION_ORDER = [
   "sunset", "tzait", "motzaeiShabbos", "motzaeiYomTov", "midnight", "shaahZmanis",
 ];
 
-const DEFAULT_OPEN = new Set(SECTION_ORDER);
+const DEFAULT_OPEN = new Set<string>(); // all sections start closed
+
+const SECTION_DEFAULT_KEY: Record<string, string> = {
+  alos:           "alosBaalHatanya",
+  misheyakir:     "misheyakir10Point2Degrees",
+  sunrise:        "seaLevelSunrise",
+  sofZmanShema:   "sofZmanShmaBaalHatanya",
+  sofZmanTefila:  "sofZmanTfilaBaalHatanya",
+  chametz:        "sofZmanBiurChametzBaalHatanya",
+  chatzos:        "chatzos",
+  minchaGedola:   "minchaGedolaBaalHatanya",
+  minchaKetana:   "minchaKetanaBaalHatanya",
+  plagHamincha:   "plagHaminchaBaalHatanya",
+  sunset:         "sunsetBaalHatanya",
+  tzait:          "tzaisBaalHatanya",
+  motzaeiShabbos: "tzaisGeonim8Point5Degrees",
+  motzaeiYomTov:  "tzaisGeonim8Point5Degrees",
+  midnight:       "midnightTonight",
+  shaahZmanis:    "shaahZmanisBaalHatanya",
+};
 
 // ── Date helpers ──────────────────────────────────────────────────────────────
 
@@ -279,6 +298,12 @@ export default function Home() {
               {SECTION_ORDER.map((key) => {
                 const sec = (data as unknown as Record<string, Record<string, string | null>>)[key];
                 if (!sec) return null;
+                const candleLightingDefaultKey = jewish?.candleLightingFromTzeit
+                  ? "candleLightingFromTzeit8Point5"
+                  : "candleLighting18";
+                const defaultKey = key === "candleLighting"
+                  ? candleLightingDefaultKey
+                  : SECTION_DEFAULT_KEY[key];
                 return (
                   <ZmanimSection
                     key={key}
@@ -288,6 +313,7 @@ export default function Home() {
                     timezone={data.meta.timezone}
                     defaultOpen={DEFAULT_OPEN.has(key)}
                     accentColor={sectionAccent(key)}
+                    defaultKey={defaultKey}
                   />
                 );
               })}

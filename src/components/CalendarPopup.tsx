@@ -236,7 +236,7 @@ export default function CalendarPopup({ date, onChange }: Props) {
                 }}
                 className="px-2 py-1 rounded-lg hover:bg-gray-100 text-gray-600 transition-colors font-medium text-sm"
               >
-                {(hebrewMode ? currentHebViewMode : currentGregViewMode) === "calendar" ? (hebrewMode ? "›" : "‹") : "✕"}
+                {(hebrewMode ? currentHebViewMode : currentGregViewMode) === "calendar" ? "‹" : "✕"}
               </button>
 
               {/* Clickable month / year */}
@@ -276,7 +276,7 @@ export default function CalendarPopup({ date, onChange }: Props) {
                   (hebrewMode ? currentHebViewMode : currentGregViewMode) !== "calendar" ? "invisible" : ""
                 }`}
               >
-                {hebrewMode ? "‹" : "›"}
+                ›
               </button>
             </div>
 

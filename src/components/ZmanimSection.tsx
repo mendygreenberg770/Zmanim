@@ -10,6 +10,7 @@ interface Props {
   defaultOpen?: boolean;
   subtitle?: string;
   accentColor?: string; // "amber" | "gray" | undefined
+  defaultKey?: string;  // key to preview when collapsed
 }
 
 function formatTime(isoStr: string | null, timezone: string): string {
@@ -53,7 +54,7 @@ function TimeRow({
 }
 
 export default function ZmanimSection({
-  title, data, timezone, defaultOpen = false, subtitle, accentColor,
+  title, data, timezone, defaultOpen = false, subtitle, accentColor, defaultKey,
 }: Props) {
   const [open, setOpen] = useState(defaultOpen);
 
@@ -69,27 +70,41 @@ export default function ZmanimSection({
     accentColor === "amber" ? "border-l-[3px] border-l-amber-400" :
     accentColor === "gray"  ? "border-l-[3px] border-l-gray-400"  : "";
 
+  const defaultRaw = defaultKey ? (data[defaultKey] ?? null) : null;
+  const defaultFormatted = defaultRaw
+    ? isDuration(defaultRaw) ? defaultRaw : formatTime(defaultRaw, timezone)
+    : null;
+
   return (
     <div className={`bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden ${accentBorder}`}>
       <button
         onClick={() => setOpen(!open)}
         className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-50 transition-colors"
       >
-        <div>
+        <div className="flex-1 min-w-0">
           <h2 className="text-sm font-semibold text-gray-800 leading-tight">{title}</h2>
           {subtitle && (
             <p className="text-xs text-amber-700 font-medium mt-0.5">{subtitle}</p>
           )}
-          <p className="text-xs text-gray-400 mt-0.5">
-            {allEntries.length} formula{allEntries.length !== 1 ? "s" : ""}
-          </p>
+          {open && (
+            <p className="text-xs text-gray-400 mt-0.5">
+              {allEntries.length} formula{allEntries.length !== 1 ? "s" : ""}
+            </p>
+          )}
         </div>
-        <svg
-          className={`w-4 h-4 text-gray-400 transition-transform flex-shrink-0 ${open ? "rotate-180" : ""}`}
-          fill="none" viewBox="0 0 24 24" stroke="currentColor"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {!open && defaultFormatted && (
+            <span className="text-sm font-mono font-semibold text-blue-600">
+              {defaultFormatted}
+            </span>
+          )}
+          <svg
+            className={`w-4 h-4 text-gray-400 transition-transform ${open ? "rotate-180" : ""}`}
+            fill="none" viewBox="0 0 24 24" stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
       </button>
 
       {open && (
