@@ -18,17 +18,22 @@ function formatTime(
   isoStr: string | null,
   timezone: string,
   round: "floor" | "ceil" = "floor",
+  showSeconds = false,
 ): string {
   if (!isoStr) return "—";
   try {
     const ms = new Date(isoStr).getTime();
-    const roundedMs = round === "ceil"
-      ? Math.ceil(ms / 60_000) * 60_000
-      : Math.floor(ms / 60_000) * 60_000;
-    return new Date(roundedMs).toLocaleTimeString("en-US", {
+    // Only round when not showing seconds (the collapsed preview)
+    const displayMs = showSeconds
+      ? ms
+      : round === "ceil"
+        ? Math.ceil(ms / 60_000) * 60_000
+        : Math.floor(ms / 60_000) * 60_000;
+    return new Date(displayMs).toLocaleTimeString("en-US", {
       timeZone: timezone,
       hour: "2-digit",
       minute: "2-digit",
+      ...(showSeconds ? { second: "2-digit" } : {}),
       hour12: true,
     });
   } catch { return isoStr; }
@@ -42,7 +47,7 @@ function TimeRow({
   label, value, timezone, small, round = "floor",
 }: { label: string; value: string | null; timezone: string; small?: boolean; round?: "floor" | "ceil" }) {
   const formatted = value
-    ? isDuration(value) ? value : formatTime(value, timezone, round)
+    ? isDuration(value) ? value : formatTime(value, timezone, round, true)
     : "—";
 
   return (
