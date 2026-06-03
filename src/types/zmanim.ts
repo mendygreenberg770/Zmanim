@@ -15,7 +15,8 @@ export interface JewishInfo {
   candleLightingFromTzeit: boolean; // Day 1 of 2-day YT or Shabbos+Erev YT
   needsCandleLighting: boolean;
   motzaeiLabel: string | null; // "Motzaei Shabbos" | "Motzaei Yom Tov" | null
-  candleLightingForLabel: string | null; // "Thursday, 15 Nissan — Pesach" etc.
+  candleLightingForLabel: string | null; // "15 Nissan — Pesach" etc.
+  shabbosFollowsYomTov: boolean;         // Shabbos immediately follows a YT day
 }
 
 export interface ZmanimMeta {

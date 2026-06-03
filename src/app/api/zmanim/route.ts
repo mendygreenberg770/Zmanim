@@ -172,6 +172,14 @@ function analyzeJewishCalendar(date: Date) {
     let isCholHaMoed = false;
     try { isCholHaMoed = jc.isCholHamoed(); } catch {}
 
+    let shabbosFollowsYomTov = false;
+    if (isShabbos) {
+      try {
+        const jcYest = new JewishCalendar(new Date(date.getTime() - 86_400_000));
+        shabbosFollowsYomTov = jcYest.isYomTov();
+      } catch {}
+    }
+
     const isYomKippur  = m === 7  && d === 10;
     const isTishaBAv   = (m === 5 && d === 9 && dow !== 7) || (m === 5 && d === 10 && dow === 1);
     const isMinorFast  = isTaanit && !isYomKippur && !isTishaBAv;
@@ -202,7 +210,7 @@ function analyzeJewishCalendar(date: Date) {
       isRoshChodesh, isChanukah,
       isErevPesach, candleLightingFromTzeit,
       needsCandleLighting: isFriday || (!isCholHaMoed && (isErevYomTov || (isYomTov && isNextDayYomTov))),
-      motzaeiLabel, candleLightingForLabel,
+      motzaeiLabel, candleLightingForLabel, shabbosFollowsYomTov,
     };
   } catch {
     return {
@@ -213,7 +221,7 @@ function analyzeJewishCalendar(date: Date) {
       isRoshChodesh: false, isChanukah: false,
       isErevPesach: false, candleLightingFromTzeit: false,
       needsCandleLighting: false,
-      motzaeiLabel: null, candleLightingForLabel: null,
+      motzaeiLabel: null, candleLightingForLabel: null, shabbosFollowsYomTov: false,
     };
   }
 }
@@ -282,7 +290,14 @@ export async function GET(req: NextRequest) {
         const md = jcM.getJewishDayOfMonth();
         const mm = jcM.getJewishMonth();
         const motzaeiJewishDay = `${md} ${HEBREW_MONTHS[mm] ?? ""}`;
-        const motzaeiTypeLabel = motzaeiIsShabbos ? "Motzaei Shabbos" : "Motzaei Yom Tov";
+        let motzaeiTypeLabel = motzaeiIsShabbos ? "Motzaei Shabbos" : "Motzaei Yom Tov";
+        if (motzaeiIsShabbos) {
+          try {
+            const jcPrev = new JewishCalendar(new Date(motzaeiDate.getTime() - 86_400_000));
+            if (jcM.isYomTov() || jcPrev.isYomTov())
+              motzaeiTypeLabel = "Motzaei Shabbos / Motzaei Yom Tov";
+          } catch {}
+        }
         motzaeiHeading = `${motzaeiTypeLabel} — ${motzaeiJewishDay}`;
       } catch {}
 
