@@ -1,0 +1,425 @@
+import { NextRequest, NextResponse } from "next/server";
+import { ComplexZmanimCalendar, GeoLocation, JewishCalendar } from "kosher-zmanim";
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Cal = any;
+
+function toISO(val: unknown): string | null {
+  if (val == null) return null;
+  if (typeof val === "object" && "toISO" in (val as object))
+    return (val as { toISO: () => string | null }).toISO();
+  if (val instanceof Date) return val.toISOString();
+  return null;
+}
+
+function fmtDuration(ms: unknown): string | null {
+  if (typeof ms !== "number" || isNaN(ms)) return null;
+  const totalSec = Math.round(ms / 1000);
+  const m = Math.floor(totalSec / 60);
+  const s = totalSec % 60;
+  return `${m}:${s.toString().padStart(2, "0")} min`;
+}
+
+function safe(fn: () => unknown): string | null {
+  try { return toISO(fn()); } catch { return null; }
+}
+function safeDur(fn: () => unknown): string | null {
+  try { return fmtDuration(fn()); } catch { return null; }
+}
+function sunriseByDeg(cal: Cal, deg: number): string | null {
+  try { return toISO(cal.getSunriseOffsetByDegrees(90 + deg)); } catch { return null; }
+}
+function sunsetByDeg(cal: Cal, deg: number): string | null {
+  try { return toISO(cal.getSunsetOffsetByDegrees(90 + deg)); } catch { return null; }
+}
+
+function halachicMidnight(geo: GeoLocation, date: Date): string | null {
+  try {
+    const c1: Cal = new ComplexZmanimCalendar(geo); c1.setDate(date);
+    const sunsetIso = toISO(c1.getSeaLevelSunset()); if (!sunsetIso) return null;
+    const c2: Cal = new ComplexZmanimCalendar(geo);
+    c2.setDate(new Date(date.getTime() + 86_400_000));
+    const sunriseIso = toISO(c2.getSeaLevelSunrise()); if (!sunriseIso) return null;
+    return new Date(Math.round((new Date(sunsetIso).getTime() + new Date(sunriseIso).getTime()) / 2)).toISOString();
+  } catch { return null; }
+}
+
+// Tzeit values reusable for both tzait and motzaei sections
+function tzaitValues(cal: Cal): Record<string, string | null> {
+  return {
+    tzaisGeonim5Point83Degrees: sunsetByDeg(cal, 5.83),
+    tzaisBaalHatanya:           safe(() => cal.getTzaisBaalHatanya()),
+    tzaisGeonim6Point3Degrees:  sunsetByDeg(cal, 6.3),
+    tzaisGeonim6Point83Degrees: sunsetByDeg(cal, 6.83),
+    tzaisGeonim7Point083Degrees: safe(() => cal.getTzaisGeonim7Point083Degrees()),
+    tzaisGeonim8Point5Degrees:  safe(() => cal.getTzaisGeonim8Point5Degrees()),
+    tzais72:                    safe(() => cal.getTzais72()),
+  };
+}
+
+// ── Hebrew calendar helpers ──────────────────────────────────────────────────
+
+const HEBREW_MONTHS = [
+  "", "Nissan", "Iyar", "Sivan", "Tamuz", "Av", "Elul",
+  "Tishrei", "Cheshvan", "Kislev", "Teves", "Shevat", "Adar", "Adar II",
+];
+
+function getSpecialDayName(jc: JewishCalendar): string | null {
+  const m  = jc.getJewishMonth();
+  const d  = jc.getJewishDayOfMonth();
+  const dow = jc.getDayOfWeek(); // 1=Sun … 7=Sat
+  let isLeap = false;
+  try { isLeap = jc.isJewishLeapYear(); } catch {}
+
+  // Tishrei
+  if (m === 7) {
+    if (d === 1 || d === 2)               return "Rosh Hashana";
+    if ((d === 3 && dow !== 7) || (d === 4 && dow === 1)) return "Tzom Gedalya";
+    if (d === 9)                           return "Erev Yom Kippur";
+    if (d === 10)                          return "Yom Kippur";
+    if (d === 14)                          return "Erev Sukkos";
+    if (d === 15 || d === 16)              return "Sukkos";
+    if (d >= 17 && d <= 20)               return "Chol HaMoed Sukkos";
+    if (d === 21)                          return "Hoshana Raba";
+    if (d === 22)                          return "Shmini Atzeres";
+    if (d === 23)                          return "Simchas Torah";
+  }
+
+  // Chanukah
+  try {
+    const chanDay = jc.getDayOfChanukah();
+    if (chanDay > 0) return `Chanukah — Day ${chanDay}`;
+  } catch {}
+
+  if (m === 10 && d === 10)              return "10 Teves (Fast)";
+  if (m === 11 && d === 15)              return "Tu B'Shvat";
+
+  // Purim
+  const adarII = isLeap ? 13 : 12;
+  if (m === adarII) {
+    if ((d === 13 && dow !== 7) || (d === 11 && dow === 5)) return "Ta'anis Esther";
+    if (d === 14) return "Purim";
+    if (d === 15) return "Shushan Purim";
+  }
+  if (isLeap && m === 12) {
+    if (d === 14) return "Purim Katan";
+    if (d === 15) return "Shushan Purim Katan";
+  }
+
+  // Nissan
+  if (m === 1) {
+    if (d === 14)               return "Erev Pesach";
+    if (d === 15 || d === 16)   return "Pesach";
+    if (d >= 17 && d <= 20)     return "Chol HaMoed Pesach";
+    if (d === 21 || d === 22)   return "Pesach";
+  }
+
+  if (m === 2 && d === 18)                return "Lag BaOmer";
+  if (m === 3 && (d === 6 || d === 7))    return "Shavuos";
+
+  // 17 Tamuz (pushed when Shabbos)
+  if ((m === 4 && d === 17 && dow !== 7) || (m === 4 && d === 18 && dow === 1))
+    return "17 Tamuz (Fast)";
+
+  // Tisha B'Av (pushed when Shabbos)
+  if ((m === 5 && d === 9 && dow !== 7) || (m === 5 && d === 10 && dow === 1))
+    return "Tisha B'Av";
+
+  if (dow === 7) return "Shabbos";
+
+  let isRC = false;
+  try { isRC = jc.isRoshChodesh(); } catch {}
+  if (isRC) {
+    const rcMonth = d === 30 ? (m < 13 ? m + 1 : 1) : m;
+    return `Rosh Chodesh ${HEBREW_MONTHS[rcMonth] ?? ""}`;
+  }
+
+  return null;
+}
+
+function analyzeJewishCalendar(date: Date) {
+  try {
+    const jc  = new JewishCalendar(date);
+    const m   = jc.getJewishMonth();
+    const d   = jc.getJewishDayOfMonth();
+    const y   = jc.getJewishYear();
+    const dow = jc.getDayOfWeek();
+
+    const isFriday  = dow === 6;
+    const isShabbos = dow === 7;
+
+    let isErevYomTov = false, isYomTov = false;
+    let isTaanit = false, isRoshChodesh = false;
+    try { isErevYomTov = jc.isErevYomTov(); }    catch {}
+    try { isYomTov     = jc.isYomTov(); }         catch {}
+    try { isTaanit     = jc.isTaanis(); }          catch {}
+    try { isRoshChodesh = jc.isRoshChodesh(); }    catch {}
+
+    // isYomTov() from the library includes Chol HaMoed — compute the actual (non-Chol-HaMoed) flag
+    let isCholHaMoed = false;
+    try { isCholHaMoed = jc.isCholHamoed(); } catch {}
+    const isActualYomTov = isYomTov && !isCholHaMoed;
+
+    // Check if tomorrow is also actual Yom Tov (2-day YT) and build candle-lighting label
+    let isNextDayActualYomTov = false;
+    let candleLightingForLabel: string | null = null;
+    try {
+      const jcTom = new JewishCalendar(new Date(date.getTime() + 86_400_000));
+      const isNextDayCholHaMoed = jcTom.isCholHamoed();
+      isNextDayActualYomTov = jcTom.isYomTov() && !isNextDayCholHaMoed;
+      const tomD = jcTom.getJewishDayOfMonth();
+      const tomM = jcTom.getJewishMonth();
+      const tomSpecial = getSpecialDayName(jcTom);
+      const tomMonthName = HEBREW_MONTHS[tomM] ?? "";
+      const detail = tomSpecial && tomSpecial !== "Shabbos" ? ` — ${tomSpecial}` : "";
+      candleLightingForLabel = `${tomD} ${tomMonthName}${detail}`;
+    } catch {}
+
+    // Shabbos that immediately follows a real (non-Chol-HaMoed) YomTov day
+    let shabbosFollowsYomTov = false;
+    if (isShabbos) {
+      try {
+        const jcYest = new JewishCalendar(new Date(date.getTime() - 86_400_000));
+        shabbosFollowsYomTov = jcYest.isYomTov() && !jcYest.isCholHamoed();
+      } catch {}
+    }
+
+    const isYomKippur  = m === 7  && d === 10;
+    const isTishaBAv   = (m === 5 && d === 9 && dow !== 7) || (m === 5 && d === 10 && dow === 1);
+    const isMinorFast  = isTaanit && !isYomKippur && !isTishaBAv;
+    const isErevPesach = m === 1  && d === 14;
+
+    let isChanukah = false;
+    try { isChanukah = jc.getDayOfChanukah() > 0; } catch {}
+
+    const specialDay = getSpecialDayName(jc);
+    const jewishDate = `${d} ${HEBREW_MONTHS[m] ?? ""} ${y}`;
+
+    // Candles may only be lit from tzeit when already in Yom Tov/Shabbos
+    const candleLightingFromTzeit =
+      (isActualYomTov && isNextDayActualYomTov && !isFriday) || // Day 1 of 2-day YT (not Erev Shabbos)
+      (isShabbos && isErevYomTov);                               // Shabbos that is also Erev YT
+
+    let motzaeiLabel: string | null = null;
+    if (isFriday || (isErevYomTov && !isShabbos)) motzaeiLabel = "Motzaei Shabbos";
+    if (isErevYomTov && !isFriday)                 motzaeiLabel = "Motzaei Yom Tov";
+    if (isShabbos)                                  motzaeiLabel = "Motzaei Shabbos";
+    if (isActualYomTov && !isShabbos)               motzaeiLabel = "Motzaei Yom Tov";
+
+    return {
+      jewishDate, specialDay,
+      isFriday, isShabbos,
+      isErevYomTov, isYomTov: isActualYomTov,
+      isTaanit, isMinorFast, isYomKippur, isTishaBAv,
+      isRoshChodesh, isChanukah,
+      isErevPesach, candleLightingFromTzeit,
+      needsCandleLighting: isFriday || isErevYomTov || (isActualYomTov && isNextDayActualYomTov),
+      motzaeiLabel, candleLightingForLabel, shabbosFollowsYomTov,
+    };
+  } catch {
+    return {
+      jewishDate: "", specialDay: null,
+      isFriday: false, isShabbos: false,
+      isErevYomTov: false, isYomTov: false,
+      isTaanit: false, isMinorFast: false, isYomKippur: false, isTishaBAv: false,
+      isRoshChodesh: false, isChanukah: false,
+      isErevPesach: false, candleLightingFromTzeit: false,
+      needsCandleLighting: false,
+      motzaeiLabel: null, candleLightingForLabel: null, shabbosFollowsYomTov: false,
+    };
+  }
+}
+
+// ── Route handler ─────────────────────────────────────────────────────────────
+
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url);
+  const lat          = parseFloat(searchParams.get("lat") ?? "");
+  const lng          = parseFloat(searchParams.get("lng") ?? "");
+  const elevation    = parseFloat(searchParams.get("elevation") ?? "0") || 0;
+  const timezone     = searchParams.get("timezone") ?? "UTC";
+  const dateStr      = searchParams.get("date");
+  const locationName = searchParams.get("locationName") ?? "Custom";
+
+  if (isNaN(lat) || isNaN(lng))
+    return NextResponse.json({ error: "Invalid lat/lng" }, { status: 400 });
+
+  // Noon UTC avoids DST / midnight-crossing issues across all timezones
+  const date = dateStr ? new Date(dateStr + "T12:00:00Z") : new Date();
+
+  const geo = new GeoLocation(locationName, lat, lng, elevation, timezone);
+  const cal: Cal = new ComplexZmanimCalendar(geo);
+  cal.setDate(date);
+
+  const jewish = analyzeJewishCalendar(date);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const result: Record<string, any> = {};
+
+  result.meta = {
+    lat, lng, elevation, timezone, locationName,
+    date: dateStr ?? date.toISOString().split("T")[0],
+    jewish,
+  };
+
+  // ── Candle lighting ────────────────────────────────────────────────────────
+  if (jewish.needsCandleLighting) {
+    if (jewish.candleLightingFromTzeit) {
+      // Day 1 of 2-day YT or Shabbos+Erev YT: light only after tzeit
+      result.candleLighting = {
+        candleLightingFromTzeit8Point5: safe(() => cal.getTzaisGeonim8Point5Degrees()),
+        candleLightingFromTzeit72:      safe(() => cal.getTzais72()),
+      };
+    } else {
+      // Regular Erev Shabbos or weekday Erev YT: light before sunset
+      // Find the last consecutive YT/Shabbos day to compute correct motzaei times
+      let motzaeiDate = new Date(date.getTime() + 86_400_000);
+      for (let offset = 2; offset <= 4; offset++) {
+        const candidate = new Date(date.getTime() + offset * 86_400_000);
+        let isRestricted = false;
+        try {
+          const jcC = new JewishCalendar(candidate);
+          isRestricted = jcC.isYomTov() || jcC.getDayOfWeek() === 7;
+        } catch {}
+        if (isRestricted) motzaeiDate = candidate;
+        else break;
+      }
+      const motzaeiCal: Cal = new ComplexZmanimCalendar(geo);
+      motzaeiCal.setDate(motzaeiDate);
+
+      let motzaeiHeading = "Motzaei Times";
+      try {
+        const jcM = new JewishCalendar(motzaeiDate);
+        const motzaeiIsShabbos = jcM.getDayOfWeek() === 7;
+        const md = jcM.getJewishDayOfMonth();
+        const mm = jcM.getJewishMonth();
+        const motzaeiJewishDay = `${md} ${HEBREW_MONTHS[mm] ?? ""}`;
+        let motzaeiTypeLabel = motzaeiIsShabbos ? "Motzaei Shabbos" : "Motzaei Yom Tov";
+        if (motzaeiIsShabbos) {
+          try {
+            const jcPrev = new JewishCalendar(new Date(motzaeiDate.getTime() - 86_400_000));
+            const prevIsActualYT = jcPrev.isYomTov() && !jcPrev.isCholHamoed();
+            const motzaeiIsActualYT = jcM.isYomTov() && !jcM.isCholHamoed();
+            if (motzaeiIsActualYT || prevIsActualYT)
+              motzaeiTypeLabel = "Motzaei Shabbos / Motzaei Yom Tov";
+          } catch {}
+        }
+        motzaeiHeading = `${motzaeiTypeLabel} — ${motzaeiJewishDay}`;
+      } catch {}
+
+      const earliestCandleLighting = safe(() => cal.getPlagHaminchaBaalHatanya());
+      const candleLighting18 = (() => {
+        try {
+          const iso = toISO(cal.getSeaLevelSunset());
+          if (!iso) return null;
+          return new Date(new Date(iso).getTime() - 18 * 60_000).toISOString();
+        } catch { return null; }
+      })();
+
+      result.candleLighting = {
+        earliestCandleLighting,
+        candleLighting18,
+        _motzaeiHeading: motzaeiHeading,
+        motzaei_tzaisGeonim8Point5Degrees: safe(() => motzaeiCal.getTzaisGeonim8Point5Degrees()),
+        motzaei_tzais72:                   safe(() => motzaeiCal.getTzais72()),
+      };
+    }
+  }
+
+  // ── Regular daily sections ──────────────────────────────────────────────────
+  result.alos = {
+    alos26Degrees:       safe(() => cal.getAlos26Degrees()),
+    alos19Point8Degrees: safe(() => cal.getAlos19Point8Degrees()),
+    alosBaalHatanya:     safe(() => cal.getAlosBaalHatanya()),
+    alos16Point1Degrees: safe(() => cal.getAlos16Point1Degrees()),
+  };
+
+  result.misheyakir = {
+    misheyakir11Point8Degrees: sunriseByDeg(cal, 11.8),
+    misheyakir11Point5Degrees: safe(() => cal.getMisheyakir11Point5Degrees()),
+    misheyakir10Point2Degrees: safe(() => cal.getMisheyakir10Point2Degrees()),
+  };
+
+  result.sunrise = { seaLevelSunrise: safe(() => cal.getSeaLevelSunrise()) };
+
+  result.sofZmanShema = {
+    sofZmanShmaMGA:         safe(() => cal.getSofZmanShmaMGA()),
+    sofZmanShmaBaalHatanya: safe(() => cal.getSofZmanShmaBaalHatanya()),
+    sofZmanShmaGRA:         safe(() => cal.getSofZmanShmaGRA()),
+  };
+
+  result.sofZmanTefila = {
+    sofZmanTfilaMGA:         safe(() => cal.getSofZmanTfilaMGA()),
+    sofZmanTfilaBaalHatanya: safe(() => cal.getSofZmanTfilaBaalHatanya()),
+    sofZmanTfilaGRA:         safe(() => cal.getSofZmanTfilaGRA()),
+  };
+
+  result.chatzos = {
+    chatzos:           safe(() => cal.getChatzos()),
+    fixedLocalChatzos: safe(() => cal.getFixedLocalChatzos()),
+  };
+
+  result.minchaGedola = {
+    minchaGedola:            safe(() => cal.getMinchaGedola()),
+    minchaGedolaBaalHatanya: safe(() => cal.getMinchaGedolaBaalHatanya()),
+    minchaGedola72Minutes:   safe(() => cal.getMinchaGedola72Minutes()),
+  };
+
+  result.minchaKetana = {
+    minchaKetana:            safe(() => cal.getMinchaKetana()),
+    minchaKetanaBaalHatanya: safe(() => cal.getMinchaKetanaBaalHatanya()),
+    minchaKetana72Minutes:   safe(() => cal.getMinchaKetana72Minutes()),
+  };
+
+  result.plagHamincha = {
+    plagHamincha:                safe(() => cal.getPlagHamincha()),
+    plagHaminchaBaalHatanya:     safe(() => cal.getPlagHaminchaBaalHatanya()),
+    plagHamincha72MinutesZmanis: safe(() => cal.getPlagHamincha72MinutesZmanis()),
+  };
+
+  result.sunset = {
+    seaLevelSunset:    safe(() => cal.getSeaLevelSunset()),
+    sunsetBaalHatanya: safe(() => cal.getSunsetBaalHatanya()),
+  };
+
+  result.tzait = tzaitValues(cal);
+
+  // ── Motzaei Shabbos (Shabbos only — dedicated section, 2 opinions) ─────────
+  if (jewish.isShabbos) {
+    result.motzaeiShabbos = {
+      tzaisGeonim8Point5Degrees: safe(() => cal.getTzaisGeonim8Point5Degrees()),
+      tzais72:                   safe(() => cal.getTzais72()),
+    };
+  }
+
+  // ── Motzaei Yom Tov (YT weekdays — dedicated section, 2 opinions) ──────────
+  // Not on Shabbos (motzaeiShabbos covers it) and not Friday (YT flows into Shabbos)
+  if (jewish.isYomTov && !jewish.isShabbos && !jewish.isFriday && !jewish.candleLightingFromTzeit) {
+    result.motzaeiYomTov = {
+      tzaisGeonim8Point5Degrees: safe(() => cal.getTzaisGeonim8Point5Degrees()),
+      tzais72:                   safe(() => cal.getTzais72()),
+    };
+  }
+
+  result.midnight = { midnightTonight: halachicMidnight(geo, date) };
+
+  result.shaahZmanis = {
+    shaahZmanisGra:             safeDur(() => cal.getShaahZmanisGra()),
+    shaahZmanisBaalHatanya:     safeDur(() => cal.getShaahZmanisBaalHatanya()),
+    shaahZmanis16Point1Degrees: safeDur(() => cal.getShaahZmanis16Point1Degrees()),
+  };
+
+  // ── Conditional: Chametz (Erev Pesach 14 Nisan) ────────────────────────────
+  if (jewish.isErevPesach) {
+    result.chametz = {
+      sofZmanAchilasChametzGRA:          safe(() => cal.getSofZmanAchilasChametzGRA()),
+      sofZmanAchilasChametzMGA72Minutes: safe(() => cal.getSofZmanAchilasChametzMGA72Minutes()),
+      sofZmanAchilasChametzBaalHatanya:  safe(() => cal.getSofZmanAchilasChametzBaalHatanya()),
+      sofZmanBiurChametzGRA:             safe(() => cal.getSofZmanBiurChametzGRA()),
+      sofZmanBiurChametzMGA72Minutes:    safe(() => cal.getSofZmanBiurChametzMGA72Minutes()),
+      sofZmanBiurChametzBaalHatanya:     safe(() => cal.getSofZmanBiurChametzBaalHatanya()),
+    };
+  }
+
+  return NextResponse.json(result);
+}
