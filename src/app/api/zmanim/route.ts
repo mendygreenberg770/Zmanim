@@ -172,18 +172,8 @@ function analyzeJewishCalendar(date: Date) {
       candleLightingForLabel = `${tomDowName}, ${tomD} ${tomMonthName}${detail}`;
     } catch {}
 
-    // Augment isErevYomTov for cases the library may miss
-    // (e.g. Hoshana Raba = Erev Shemini Atzeret, 20 Nissan = Erev last days of Pesach)
-    if (!isErevYomTov && isNextDayYomTov) isErevYomTov = true;
-
-    // Detect Shabbos that follows a YT day (for combined motzaei label)
-    let shabbosFollowsYomTov = false;
-    if (isShabbos) {
-      try {
-        const jcYest = new JewishCalendar(new Date(date.getTime() - 86_400_000));
-        shabbosFollowsYomTov = jcYest.isYomTov();
-      } catch {}
-    }
+    let isCholHaMoed = false;
+    try { isCholHaMoed = jc.isCholHamoed(); } catch {}
 
     const isYomKippur  = m === 7  && d === 10;
     const isTishaBAv   = (m === 5 && d === 9 && dow !== 7) || (m === 5 && d === 10 && dow === 1);
@@ -214,8 +204,8 @@ function analyzeJewishCalendar(date: Date) {
       isTaanit, isMinorFast, isYomKippur, isTishaBAv,
       isRoshChodesh, isChanukah,
       isErevPesach, candleLightingFromTzeit,
-      needsCandleLighting: isFriday || isErevYomTov || (isYomTov && isNextDayYomTov),
-      motzaeiLabel, candleLightingForLabel, shabbosFollowsYomTov,
+      needsCandleLighting: isFriday || (!isCholHaMoed && (isErevYomTov || (isYomTov && isNextDayYomTov))),
+      motzaeiLabel, candleLightingForLabel,
     };
   } catch {
     return {
@@ -226,7 +216,7 @@ function analyzeJewishCalendar(date: Date) {
       isRoshChodesh: false, isChanukah: false,
       isErevPesach: false, candleLightingFromTzeit: false,
       needsCandleLighting: false,
-      motzaeiLabel: null, candleLightingForLabel: null, shabbosFollowsYomTov: false,
+      motzaeiLabel: null, candleLightingForLabel: null,
     };
   }
 }
@@ -295,14 +285,7 @@ export async function GET(req: NextRequest) {
         const md = jcM.getJewishDayOfMonth();
         const mm = jcM.getJewishMonth();
         const motzaeiJewishDay = `${md} ${HEBREW_MONTHS[mm] ?? ""}`;
-        let motzaeiTypeLabel = motzaeiIsShabbos ? "Motzaei Shabbos" : "Motzaei Yom Tov";
-        // If the day before motzaei-Shabbos was YT, it's a combined end
-        if (motzaeiIsShabbos) {
-          try {
-            const jcPrev = new JewishCalendar(new Date(motzaeiDate.getTime() - 86_400_000));
-            if (jcPrev.isYomTov()) motzaeiTypeLabel = "Motzaei Shabbos / Motzaei Yom Tov";
-          } catch {}
-        }
+        const motzaeiTypeLabel = motzaeiIsShabbos ? "Motzaei Shabbos" : "Motzaei Yom Tov";
         motzaeiHeading = `${motzaeiTypeLabel} — ${motzaeiJewishDay}`;
       } catch {}
 

@@ -134,8 +134,6 @@ export default function Home() {
       return "Dawn / Fast Start — עלות השחר";
     if (key === "candleLighting" && jewish?.isErevYomTov && !jewish.isFriday)
       return "Hadlakas Neiros (Yom Tov) — הדלקת נרות";
-    if (key === "motzaeiShabbos" && jewish?.shabbosFollowsYomTov)
-      return "Motzaei Shabbos / Motzaei Yom Tov";
     return SECTION_LABELS[key] ?? key;
   }
 
@@ -144,6 +142,8 @@ export default function Home() {
       return jewish?.candleLightingForLabel
         ? `Light after — ${jewish.candleLightingForLabel}`
         : "Light after";
+    if (key === "candleLighting" && jewish?.isFriday && jewish.isYomTov)
+      return `${jewish.specialDay ?? "Yom Tov"} / Erev Shabbos`;
     if (key === "candleLighting" && jewish)
       return jewish.candleLightingForLabel ?? (jewish.isFriday ? "Erev Shabbos" : "Erev Yom Tov");
     if (key === "motzaeiShabbos" && jewish?.jewishDate)
