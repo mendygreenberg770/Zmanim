@@ -15,6 +15,7 @@ export const SECTION_LABELS: Record<string, string> = {
   shaahZmanis:   "Shaah Zmanit (Proportional Hour) — שעה זמנית",
   chametz:        "Chametz Times (Erev Pesach)",
   motzaeiShabbos: "Motzaei Shabbos — מוצאי שבת",
+  motzaeiYomTov:  "Motzaei Yom Tov — מוצאי יום טוב",
 };
 
 export const ZMAN_LABELS: Record<string, string> = {

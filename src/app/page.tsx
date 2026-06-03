@@ -16,7 +16,7 @@ const SECTION_ORDER = [
   "sofZmanShema", "sofZmanTefila",
   "chametz",
   "chatzos", "minchaGedola", "minchaKetana", "plagHamincha",
-  "sunset", "tzait", "motzaeiShabbos", "midnight", "shaahZmanis",
+  "sunset", "tzait", "motzaeiShabbos", "motzaeiYomTov", "midnight", "shaahZmanis",
 ];
 
 const DEFAULT_OPEN = new Set(SECTION_ORDER);
@@ -132,8 +132,6 @@ export default function Home() {
       return "Hadlakas Neiros — Light from Tzeit";
     if (key === "alos" && jewish?.isTaanit && jewish.isMinorFast)
       return "Dawn / Fast Start — עלות השחר";
-    if (key === "tzait" && jewish?.motzaeiLabel)
-      return `${jewish.motzaeiLabel} — ${SECTION_LABELS.tzait}`;
     if (key === "candleLighting" && jewish?.isErevYomTov && !jewish.isFriday)
       return "Hadlakas Neiros (Yom Tov) — הדלקת נרות";
     return SECTION_LABELS[key] ?? key;
@@ -148,12 +146,15 @@ export default function Home() {
       return jewish.candleLightingForLabel ?? (jewish.isFriday ? "Erev Shabbos" : "Erev Yom Tov");
     if (key === "motzaeiShabbos" && jewish?.jewishDate)
       return jewish.jewishDate;
+    if (key === "motzaeiYomTov" && jewish?.jewishDate)
+      return jewish.jewishDate;
     return undefined;
   }
 
   function sectionAccent(key: string): string | undefined {
     if (key === "candleLighting") return "amber";
     if (key === "motzaeiShabbos") return "amber";
+    if (key === "motzaeiYomTov") return "amber";
     if (key === "alos" && jewish?.isTaanit) return "gray";
     return undefined;
   }

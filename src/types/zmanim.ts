@@ -45,6 +45,7 @@ export interface ZmanimResponse {
   sunset: ZmanimSection;
   tzait: ZmanimSection;
   motzaeiShabbos?: ZmanimSection; // Shabbos only
+  motzaeiYomTov?: ZmanimSection;  // YT only (non-Shabbos, non-Friday)
   midnight: ZmanimSection;
   shaahZmanis: ZmanimSection;
   chametz?: ZmanimSection; // Erev Pesach only

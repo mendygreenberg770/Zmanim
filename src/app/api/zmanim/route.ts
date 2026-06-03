@@ -371,6 +371,15 @@ export async function GET(req: NextRequest) {
     };
   }
 
+  // ── Motzaei Yom Tov (YT weekdays — dedicated section, 2 opinions) ──────────
+  // Not on Shabbos (motzaeiShabbos covers it) and not Friday (YT flows into Shabbos)
+  if (jewish.isYomTov && !jewish.isShabbos && !jewish.isFriday) {
+    result.motzaeiYomTov = {
+      tzaisGeonim8Point5Degrees: safe(() => cal.getTzaisGeonim8Point5Degrees()),
+      tzais72:                   safe(() => cal.getTzais72()),
+    };
+  }
+
   result.midnight = { midnightTonight: halachicMidnight(geo, date) };
 
   result.shaahZmanis = {
