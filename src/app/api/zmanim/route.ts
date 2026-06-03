@@ -155,11 +155,21 @@ function analyzeJewishCalendar(date: Date) {
     try { isTaanit     = jc.isTaanis(); }          catch {}
     try { isRoshChodesh = jc.isRoshChodesh(); }    catch {}
 
-    // Check if tomorrow is also Yom Tov (2-day YT: Rosh Hashana, Pesach, Sukkos, Shavuos)
+    // Check if tomorrow is also Yom Tov (2-day YT) and build candle-lighting label
     let isNextDayYomTov = false;
+    let candleLightingForLabel: string | null = null;
     try {
-      const jcTomorrow = new JewishCalendar(new Date(date.getTime() + 86_400_000));
-      isNextDayYomTov = jcTomorrow.isYomTov();
+      const DOW_NAMES = ["", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Shabbos"];
+      const jcTom = new JewishCalendar(new Date(date.getTime() + 86_400_000));
+      isNextDayYomTov = jcTom.isYomTov();
+      const tomDow = jcTom.getDayOfWeek();
+      const tomD = jcTom.getJewishDayOfMonth();
+      const tomM = jcTom.getJewishMonth();
+      const tomSpecial = getSpecialDayName(jcTom);
+      const tomDowName = DOW_NAMES[tomDow] ?? "";
+      const tomMonthName = HEBREW_MONTHS[tomM] ?? "";
+      const detail = tomSpecial && tomSpecial !== "Shabbos" ? ` — ${tomSpecial}` : "";
+      candleLightingForLabel = `${tomDowName}, ${tomD} ${tomMonthName}${detail}`;
     } catch {}
 
     const isYomKippur  = m === 7  && d === 10;
@@ -192,7 +202,7 @@ function analyzeJewishCalendar(date: Date) {
       isRoshChodesh, isChanukah,
       isErevPesach, candleLightingFromTzeit,
       needsCandleLighting: isFriday || isErevYomTov || (isYomTov && isNextDayYomTov),
-      motzaeiLabel,
+      motzaeiLabel, candleLightingForLabel,
     };
   } catch {
     return {
@@ -203,7 +213,7 @@ function analyzeJewishCalendar(date: Date) {
       isRoshChodesh: false, isChanukah: false,
       isErevPesach: false, candleLightingFromTzeit: false,
       needsCandleLighting: false,
-      motzaeiLabel: null,
+      motzaeiLabel: null, candleLightingForLabel: null,
     };
   }
 }

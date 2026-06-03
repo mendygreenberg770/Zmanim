@@ -14,9 +14,9 @@ const SECTION_ORDER = [
   "candleLighting",
   "alos", "misheyakir", "sunrise",
   "sofZmanShema", "sofZmanTefila",
+  "chametz",
   "chatzos", "minchaGedola", "minchaKetana", "plagHamincha",
   "sunset", "tzait", "motzaeiShabbos", "midnight", "shaahZmanis",
-  "chametz",
 ];
 
 const DEFAULT_OPEN = new Set(SECTION_ORDER);
@@ -129,7 +129,7 @@ export default function Home() {
 
   function sectionTitle(key: string): string {
     if (key === "candleLighting" && jewish?.candleLightingFromTzeit)
-      return "Hadlakas Neiros (Day 2) — Light from Tzeit";
+      return "Hadlakas Neiros — Light from Tzeit";
     if (key === "alos" && jewish?.isTaanit && jewish.isMinorFast)
       return "Dawn / Fast Start — עלות השחר";
     if (key === "tzait" && jewish?.motzaeiLabel)
@@ -141,16 +141,20 @@ export default function Home() {
 
   function sectionSubtitle(key: string): string | undefined {
     if (key === "candleLighting" && jewish?.candleLightingFromTzeit)
-      return "Light candles only after Yom Tov ends";
+      return jewish?.candleLightingForLabel
+        ? `Light after Yom Tov ends — ${jewish.candleLightingForLabel}`
+        : "Light candles only after Yom Tov ends";
     if (key === "candleLighting" && jewish)
-      return jewish.isFriday ? "Erev Shabbos" : "Erev Yom Tov";
+      return jewish.candleLightingForLabel ?? (jewish.isFriday ? "Erev Shabbos" : "Erev Yom Tov");
+    if (key === "motzaeiShabbos" && jewish?.jewishDate)
+      return jewish.jewishDate;
     return undefined;
   }
 
   function sectionAccent(key: string): string | undefined {
     if (key === "candleLighting") return "amber";
-    if (key === "tzait" && jewish?.isShabbos) return "amber";
-    if (key === "alos" && jewish?.isTaanit)   return "gray";
+    if (key === "motzaeiShabbos") return "amber";
+    if (key === "alos" && jewish?.isTaanit) return "gray";
     return undefined;
   }
 

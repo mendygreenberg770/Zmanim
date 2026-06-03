@@ -79,6 +79,32 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ days, firstDayOfWeek });
     }
 
+    if (mode === "hebrew-month-grid") {
+      const year  = parseInt(searchParams.get("year")  ?? "");
+      const month = parseInt(searchParams.get("month") ?? "");
+      if (isNaN(year) || isNaN(month))
+        return NextResponse.json({ error: "Invalid params" }, { status: 400 });
+
+      const jc: JC = new JewishCalendar();
+      jc.setJewishDate(year, month, 1);
+      const daysInMonth = jc.getDaysInJewishMonth();
+      const isLeap = jc.isJewishLeapYear();
+
+      const days = [];
+      for (let d = 1; d <= daysInMonth; d++) {
+        jc.setJewishDate(year, month, d);
+        const gy = jc.getGregorianYear();
+        const gm = String(jc.getGregorianMonth() + 1).padStart(2, "0");
+        const gd = String(jc.getGregorianDayOfMonth()).padStart(2, "0");
+        const gregorianDate = `${gy}-${gm}-${gd}`;
+        const dow = new Date(gregorianDate + "T12:00:00Z").getDay(); // 0=Sun
+        days.push({ hebrewDay: d, gregorianDate, dayOfWeek: dow });
+      }
+
+      const firstDayOfWeek = days[0]?.dayOfWeek ?? 0;
+      return NextResponse.json({ days, firstDayOfWeek, daysInMonth, isLeap });
+    }
+
     return NextResponse.json({ error: "Invalid mode" }, { status: 400 });
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 });

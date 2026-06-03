@@ -15,6 +15,7 @@ export interface JewishInfo {
   candleLightingFromTzeit: boolean; // Day 1 of 2-day YT or Shabbos+Erev YT
   needsCandleLighting: boolean;
   motzaeiLabel: string | null; // "Motzaei Shabbos" | "Motzaei Yom Tov" | null
+  candleLightingForLabel: string | null; // "Thursday, 15 Nissan — Pesach" etc.
 }
 
 export interface ZmanimMeta {
