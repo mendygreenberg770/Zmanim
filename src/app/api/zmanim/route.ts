@@ -159,17 +159,14 @@ function analyzeJewishCalendar(date: Date) {
     let isNextDayYomTov = false;
     let candleLightingForLabel: string | null = null;
     try {
-      const DOW_NAMES = ["", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Shabbos"];
       const jcTom = new JewishCalendar(new Date(date.getTime() + 86_400_000));
       isNextDayYomTov = jcTom.isYomTov();
-      const tomDow = jcTom.getDayOfWeek();
       const tomD = jcTom.getJewishDayOfMonth();
       const tomM = jcTom.getJewishMonth();
       const tomSpecial = getSpecialDayName(jcTom);
-      const tomDowName = DOW_NAMES[tomDow] ?? "";
       const tomMonthName = HEBREW_MONTHS[tomM] ?? "";
       const detail = tomSpecial && tomSpecial !== "Shabbos" ? ` — ${tomSpecial}` : "";
-      candleLightingForLabel = `${tomDowName}, ${tomD} ${tomMonthName}${detail}`;
+      candleLightingForLabel = `${tomD} ${tomMonthName}${detail}`;
     } catch {}
 
     let isCholHaMoed = false;
@@ -376,7 +373,7 @@ export async function GET(req: NextRequest) {
 
   // ── Motzaei Yom Tov (YT weekdays — dedicated section, 2 opinions) ──────────
   // Not on Shabbos (motzaeiShabbos covers it) and not Friday (YT flows into Shabbos)
-  if (jewish.isYomTov && !jewish.isShabbos && !jewish.isFriday) {
+  if (jewish.isYomTov && !jewish.isShabbos && !jewish.isFriday && !jewish.candleLightingFromTzeit) {
     result.motzaeiYomTov = {
       tzaisGeonim8Point5Degrees: safe(() => cal.getTzaisGeonim8Point5Degrees()),
       tzais72:                   safe(() => cal.getTzais72()),

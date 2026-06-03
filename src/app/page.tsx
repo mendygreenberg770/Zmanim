@@ -139,17 +139,17 @@ export default function Home() {
 
   function sectionSubtitle(key: string): string | undefined {
     if (key === "candleLighting" && jewish?.candleLightingFromTzeit)
-      return jewish?.candleLightingForLabel
-        ? `Light after — ${jewish.candleLightingForLabel}`
-        : "Light after";
+      return "Light after";
     if (key === "candleLighting" && jewish?.isFriday && jewish.isYomTov)
       return `${jewish.specialDay ?? "Yom Tov"} / Erev Shabbos`;
+    if (key === "candleLighting" && jewish?.isFriday)
+      return "Erev Shabbos";
     if (key === "candleLighting" && jewish)
-      return jewish.candleLightingForLabel ?? (jewish.isFriday ? "Erev Shabbos" : "Erev Yom Tov");
+      return jewish.candleLightingForLabel ?? "Erev Yom Tov";
     if (key === "motzaeiShabbos" && jewish?.jewishDate)
-      return jewish.jewishDate;
+      return jewish.jewishDate.split(" ").slice(0, 2).join(" ");
     if (key === "motzaeiYomTov" && jewish?.jewishDate)
-      return jewish.jewishDate;
+      return jewish.jewishDate.split(" ").slice(0, 2).join(" ");
     return undefined;
   }
 
