@@ -32,12 +32,32 @@ const SECTION_DEFAULT_KEY: Record<string, string> = {
   minchaGedola:   "minchaGedolaBaalHatanya",
   minchaKetana:   "minchaKetanaBaalHatanya",
   plagHamincha:   "plagHaminchaBaalHatanya",
-  sunset:         "sunsetBaalHatanya",
+  sunset:         "seaLevelSunset",
   tzait:          "tzaisBaalHatanya",
   motzaeiShabbos: "tzaisGeonim8Point5Degrees",
   motzaeiYomTov:  "tzaisGeonim8Point5Degrees",
   midnight:       "midnightTonight",
   shaahZmanis:    "shaahZmanisBaalHatanya",
+};
+
+const SECTION_ROUND: Record<string, "floor" | "ceil"> = {
+  candleLighting:  "floor",
+  alos:            "floor",
+  misheyakir:      "ceil",
+  sunrise:         "floor",
+  sofZmanShema:    "floor",
+  sofZmanTefila:   "floor",
+  chametz:         "floor",
+  chatzos:         "floor",
+  minchaGedola:    "ceil",
+  minchaKetana:    "ceil",
+  plagHamincha:    "ceil",
+  sunset:          "floor",
+  tzait:           "ceil",
+  motzaeiShabbos:  "ceil",
+  motzaeiYomTov:   "ceil",
+  midnight:        "floor",
+  shaahZmanis:     "floor",
 };
 
 // ── Date helpers ──────────────────────────────────────────────────────────────
@@ -304,6 +324,9 @@ export default function Home() {
                 const defaultKey = key === "candleLighting"
                   ? candleLightingDefaultKey
                   : SECTION_DEFAULT_KEY[key];
+                const roundDirection = key === "candleLighting" && jewish?.candleLightingFromTzeit
+                  ? "ceil"
+                  : (SECTION_ROUND[key] ?? "floor");
                 return (
                   <ZmanimSection
                     key={key}
@@ -314,6 +337,7 @@ export default function Home() {
                     defaultOpen={DEFAULT_OPEN.has(key)}
                     accentColor={sectionAccent(key)}
                     defaultKey={defaultKey}
+                    roundDirection={roundDirection}
                   />
                 );
               })}

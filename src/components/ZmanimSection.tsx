@@ -11,16 +11,24 @@ interface Props {
   subtitle?: string;
   accentColor?: string; // "amber" | "gray" | undefined
   defaultKey?: string;  // key to preview when collapsed
+  roundDirection?: "floor" | "ceil"; // default: floor
 }
 
-function formatTime(isoStr: string | null, timezone: string): string {
+function formatTime(
+  isoStr: string | null,
+  timezone: string,
+  round: "floor" | "ceil" = "floor",
+): string {
   if (!isoStr) return "—";
   try {
-    return new Date(isoStr).toLocaleTimeString("en-US", {
+    const ms = new Date(isoStr).getTime();
+    const roundedMs = round === "ceil"
+      ? Math.ceil(ms / 60_000) * 60_000
+      : Math.floor(ms / 60_000) * 60_000;
+    return new Date(roundedMs).toLocaleTimeString("en-US", {
       timeZone: timezone,
       hour: "2-digit",
       minute: "2-digit",
-      second: "2-digit",
       hour12: true,
     });
   } catch { return isoStr; }
@@ -31,10 +39,10 @@ function isDuration(value: string): boolean {
 }
 
 function TimeRow({
-  label, value, timezone, small,
-}: { label: string; value: string | null; timezone: string; small?: boolean }) {
+  label, value, timezone, small, round = "floor",
+}: { label: string; value: string | null; timezone: string; small?: boolean; round?: "floor" | "ceil" }) {
   const formatted = value
-    ? isDuration(value) ? value : formatTime(value, timezone)
+    ? isDuration(value) ? value : formatTime(value, timezone, round)
     : "—";
 
   return (
@@ -54,7 +62,7 @@ function TimeRow({
 }
 
 export default function ZmanimSection({
-  title, data, timezone, defaultOpen = false, subtitle, accentColor, defaultKey,
+  title, data, timezone, defaultOpen = false, subtitle, accentColor, defaultKey, roundDirection = "floor",
 }: Props) {
   const [open, setOpen] = useState(defaultOpen);
 
@@ -72,7 +80,7 @@ export default function ZmanimSection({
 
   const defaultRaw = defaultKey ? (data[defaultKey] ?? null) : null;
   const defaultFormatted = defaultRaw
-    ? isDuration(defaultRaw) ? defaultRaw : formatTime(defaultRaw, timezone)
+    ? isDuration(defaultRaw) ? defaultRaw : formatTime(defaultRaw, timezone, roundDirection)
     : null;
 
   return (
@@ -117,6 +125,7 @@ export default function ZmanimSection({
                   label={ZMAN_LABELS[key] ?? key}
                   value={value}
                   timezone={timezone}
+                  round={roundDirection}
                 />
               ))}
             </tbody>
@@ -138,6 +147,7 @@ export default function ZmanimSection({
                       value={value}
                       timezone={timezone}
                       small
+                      round="ceil"
                     />
                   ))}
                 </tbody>
