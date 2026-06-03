@@ -19,8 +19,10 @@ export const SECTION_LABELS: Record<string, string> = {
 
 export const ZMAN_LABELS: Record<string, string> = {
   // Candle lighting
-  earliestCandleLighting: "Earliest Candle Lighting (from Plag HaMincha)",
-  candleLighting18:       "Candle Lighting — 18 min before sunset",
+  earliestCandleLighting:        "Earliest Candle Lighting (from Plag HaMincha)",
+  candleLighting18:              "Candle Lighting — 18 min before sunset",
+  candleLightingFromTzeit8Point5: "Candle Lighting (from Tzeit) — R' Tukachinsky / Igros Moshe, 36 min (8.5°)",
+  candleLightingFromTzeit72:      "Candle Lighting (from Tzeit) — Rabeinu Tam, 72 fixed min",
 
   // Motzaei Shabbos (2 opinions used in candle-lighting and motzaei sections)
   motzaei_tzaisGeonim8Point5Degrees: "Shabbos Ends — R' Tukachinsky / Igros Moshe, 36 min (8.5°)",

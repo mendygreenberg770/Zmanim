@@ -155,6 +155,13 @@ function analyzeJewishCalendar(date: Date) {
     try { isTaanit     = jc.isTaanis(); }          catch {}
     try { isRoshChodesh = jc.isRoshChodesh(); }    catch {}
 
+    // Check if tomorrow is also Yom Tov (2-day YT: Rosh Hashana, Pesach, Sukkos, Shavuos)
+    let isNextDayYomTov = false;
+    try {
+      const jcTomorrow = new JewishCalendar(new Date(date.getTime() + 86_400_000));
+      isNextDayYomTov = jcTomorrow.isYomTov();
+    } catch {}
+
     const isYomKippur  = m === 7  && d === 10;
     const isTishaBAv   = (m === 5 && d === 9 && dow !== 7) || (m === 5 && d === 10 && dow === 1);
     const isMinorFast  = isTaanit && !isYomKippur && !isTishaBAv;
@@ -166,7 +173,11 @@ function analyzeJewishCalendar(date: Date) {
     const specialDay = getSpecialDayName(jc);
     const jewishDate = `${d} ${HEBREW_MONTHS[m] ?? ""} ${y}`;
 
-    // What label to use for motzaei (tomorrow / end of today)
+    // Candles may only be lit from tzeit when already in Yom Tov/Shabbos
+    const candleLightingFromTzeit =
+      (isYomTov && isNextDayYomTov && !isFriday) || // Day 1 of 2-day YT (not Erev Shabbos)
+      (isShabbos && isErevYomTov);                    // Shabbos that is also Erev YT
+
     let motzaeiLabel: string | null = null;
     if (isFriday || (isErevYomTov && !isShabbos)) motzaeiLabel = "Motzaei Shabbos";
     if (isErevYomTov && !isFriday)                 motzaeiLabel = "Motzaei Yom Tov";
@@ -179,8 +190,8 @@ function analyzeJewishCalendar(date: Date) {
       isErevYomTov, isYomTov,
       isTaanit, isMinorFast, isYomKippur, isTishaBAv,
       isRoshChodesh, isChanukah,
-      isErevPesach,
-      needsCandleLighting: isFriday || isErevYomTov,
+      isErevPesach, candleLightingFromTzeit,
+      needsCandleLighting: isFriday || isErevYomTov || (isYomTov && isNextDayYomTov),
       motzaeiLabel,
     };
   } catch {
@@ -190,7 +201,7 @@ function analyzeJewishCalendar(date: Date) {
       isErevYomTov: false, isYomTov: false,
       isTaanit: false, isMinorFast: false, isYomKippur: false, isTishaBAv: false,
       isRoshChodesh: false, isChanukah: false,
-      isErevPesach: false,
+      isErevPesach: false, candleLightingFromTzeit: false,
       needsCandleLighting: false,
       motzaeiLabel: null,
     };
@@ -229,28 +240,35 @@ export async function GET(req: NextRequest) {
     jewish,
   };
 
-  // ── Candle lighting (Erev Shabbos / Erev Yom Tov) ──────────────────────────
+  // ── Candle lighting ────────────────────────────────────────────────────────
   if (jewish.needsCandleLighting) {
-    const nextCal: Cal = new ComplexZmanimCalendar(geo);
-    nextCal.setDate(new Date(date.getTime() + 86_400_000));
+    if (jewish.candleLightingFromTzeit) {
+      // Day 1 of 2-day YT or Shabbos+Erev YT: light only after tzeit
+      result.candleLighting = {
+        candleLightingFromTzeit8Point5: safe(() => cal.getTzaisGeonim8Point5Degrees()),
+        candleLightingFromTzeit72:      safe(() => cal.getTzais72()),
+      };
+    } else {
+      // Regular Erev Shabbos or weekday Erev YT: light before sunset
+      const nextCal: Cal = new ComplexZmanimCalendar(geo);
+      nextCal.setDate(new Date(date.getTime() + 86_400_000));
 
-    const earliestCandleLighting = safe(() => cal.getPlagHaminchaBaalHatanya());
+      const earliestCandleLighting = safe(() => cal.getPlagHaminchaBaalHatanya());
+      const candleLighting18 = (() => {
+        try {
+          const iso = toISO(cal.getSeaLevelSunset());
+          if (!iso) return null;
+          return new Date(new Date(iso).getTime() - 18 * 60_000).toISOString();
+        } catch { return null; }
+      })();
 
-    const candleLighting18 = (() => {
-      try {
-        const iso = toISO(cal.getSeaLevelSunset());
-        if (!iso) return null;
-        return new Date(new Date(iso).getTime() - 18 * 60_000).toISOString();
-      } catch { return null; }
-    })();
-
-    // Only the two standard Motzaei Shabbos opinions
-    result.candleLighting = {
-      earliestCandleLighting,
-      candleLighting18,
-      motzaei_tzaisGeonim8Point5Degrees: safe(() => nextCal.getTzaisGeonim8Point5Degrees()),
-      motzaei_tzais72:                   safe(() => nextCal.getTzais72()),
-    };
+      result.candleLighting = {
+        earliestCandleLighting,
+        candleLighting18,
+        motzaei_tzaisGeonim8Point5Degrees: safe(() => nextCal.getTzaisGeonim8Point5Degrees()),
+        motzaei_tzais72:                   safe(() => nextCal.getTzais72()),
+      };
+    }
   }
 
   // ── Regular daily sections ──────────────────────────────────────────────────

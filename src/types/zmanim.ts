@@ -12,6 +12,7 @@ export interface JewishInfo {
   isRoshChodesh: boolean;
   isChanukah: boolean;
   isErevPesach: boolean;
+  candleLightingFromTzeit: boolean; // Day 1 of 2-day YT or Shabbos+Erev YT
   needsCandleLighting: boolean;
   motzaeiLabel: string | null; // "Motzaei Shabbos" | "Motzaei Yom Tov" | null
 }

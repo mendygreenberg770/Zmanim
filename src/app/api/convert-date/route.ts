@@ -48,6 +48,37 @@ export async function GET(req: NextRequest) {
       });
     }
 
+    if (mode === "month-grid") {
+      const year  = parseInt(searchParams.get("year")  ?? "");
+      const month = parseInt(searchParams.get("month") ?? ""); // 1-indexed
+      if (isNaN(year) || isNaN(month))
+        return NextResponse.json({ error: "Invalid params" }, { status: 400 });
+
+      const mm = String(month).padStart(2, "0");
+      const firstDay = new Date(`${year}-${mm}-01T12:00:00Z`);
+      const daysInMonth = new Date(year, month, 0).getDate();
+      const firstDayOfWeek = firstDay.getDay(); // 0=Sun
+
+      const HEB_MONTHS = [
+        "", "Nisan", "Iyar", "Sivan", "Tamuz", "Av", "Elul",
+        "Tishrei", "Cheshvan", "Kislev", "Tevet", "Shevat", "Adar", "Adar II",
+      ];
+
+      const days = [];
+      for (let d = 1; d <= daysInMonth; d++) {
+        const dd = String(d).padStart(2, "0");
+        const jc: JC = new JewishCalendar(new Date(`${year}-${mm}-${dd}T12:00:00Z`));
+        days.push({
+          day:             d,
+          hebrewDay:       jc.getJewishDayOfMonth(),
+          hebrewMonth:     jc.getJewishMonth(),
+          hebrewYear:      jc.getJewishYear(),
+          hebrewMonthName: HEB_MONTHS[jc.getJewishMonth()] ?? "",
+        });
+      }
+      return NextResponse.json({ days, firstDayOfWeek });
+    }
+
     return NextResponse.json({ error: "Invalid mode" }, { status: 400 });
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 });

@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import LocationPicker from "@/components/LocationPicker";
 import ZmanimSection from "@/components/ZmanimSection";
 import HebrewDatePicker from "@/components/HebrewDatePicker";
+import CalendarPopup from "@/components/CalendarPopup";
 import { ZmanimResponse, JewishInfo } from "@/types/zmanim";
 import { SECTION_LABELS } from "@/lib/labels";
 
@@ -29,7 +30,8 @@ function shiftDate(dateStr: string, days: number): string {
 }
 
 function todayStr(): string {
-  return new Date().toISOString().split("T")[0];
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 // ── Day badge ─────────────────────────────────────────────────────────────────
@@ -126,6 +128,8 @@ export default function Home() {
   const jewish = data?.meta.jewish;
 
   function sectionTitle(key: string): string {
+    if (key === "candleLighting" && jewish?.candleLightingFromTzeit)
+      return "Hadlakas Neiros (Day 2) — Light from Tzeit";
     if (key === "alos" && jewish?.isTaanit && jewish.isMinorFast)
       return "Dawn / Fast Start — עלות השחר";
     if (key === "tzait" && jewish?.motzaeiLabel)
@@ -136,13 +140,15 @@ export default function Home() {
   }
 
   function sectionSubtitle(key: string): string | undefined {
+    if (key === "candleLighting" && jewish?.candleLightingFromTzeit)
+      return "Light candles only after Yom Tov ends";
     if (key === "candleLighting" && jewish)
       return jewish.isFriday ? "Erev Shabbos" : "Erev Yom Tov";
     return undefined;
   }
 
   function sectionAccent(key: string): string | undefined {
-    if (key === "candleLighting" || key === "motzaeiShabbos") return "amber";
+    if (key === "candleLighting") return "amber";
     if (key === "tzait" && jewish?.isShabbos) return "amber";
     if (key === "alos" && jewish?.isTaanit)   return "gray";
     return undefined;
@@ -182,14 +188,9 @@ export default function Home() {
             {/* Date navigation */}
             <div className="flex-1 min-w-[220px] space-y-1.5">
               <label className="block text-xs text-gray-500 font-medium">Date</label>
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 flex-wrap">
                 <NavBtn onClick={() => goToDate(shiftDate(date, -1))}>&#8592;</NavBtn>
-                <input
-                  type="date" value={date}
-                  onChange={e => goToDate(e.target.value)}
-                  className="flex-1 px-3 py-2 rounded-lg border border-gray-300 bg-white text-gray-900 text-sm
-                             focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+                <CalendarPopup date={date} onChange={goToDate} />
                 <NavBtn onClick={() => goToDate(shiftDate(date, 1))}>&#8594;</NavBtn>
                 <NavBtn onClick={() => goToDate(todayStr())} active={isToday}>Today</NavBtn>
               </div>
