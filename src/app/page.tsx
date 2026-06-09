@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import Link from "next/link";
 import LocationPicker from "@/components/LocationPicker";
 import ZmanimSection from "@/components/ZmanimSection";
 import HebrewDatePicker from "@/components/HebrewDatePicker";
@@ -213,6 +214,12 @@ export default function Home() {
             <h1 className="text-lg font-bold text-gray-900 leading-tight">Zmanim</h1>
             <p className="text-xs text-gray-500">Halachic Times — All Opinions</p>
           </div>
+          <Link
+            href="/techum"
+            className="px-3 py-1.5 rounded-lg border border-blue-200 bg-blue-50 text-blue-700 text-xs font-medium hover:bg-blue-100 transition-colors"
+          >
+            Techum Shabbos →
+          </Link>
           {data && (
             <div className="text-right">
               {jewish?.jewishDate && (
